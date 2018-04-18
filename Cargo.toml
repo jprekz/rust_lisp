@@ -1,0 +1,6 @@
+[package]
+name = "rust_lisp"
+version = "0.1.0"
+authors = ["jprekz <jprekz@users.noreply.github.com>"]
+
+[dependencies]
