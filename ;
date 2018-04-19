@@ -1,0 +1,86 @@
+use super::lexer::*;
+
+#[derive(Clone)]
+pub enum Value {
+    Cons(Rc<RefCell<Value>>, Rc<RefCell<Value>>),
+    Nil,
+    Quoted(Rc<RefCell<Value>>),
+    Bool(bool),
+    Num(f64),
+    Ident(String),
+    Procedure(Vec<Token>, Vec<Token>),
+}
+impl std::fmt::Debug for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Value::Cons(car, cdr) => write!(f, "({:?} . {:?})", car.borrow(), cdr.borrow()),
+            Value::Quoted(value) => write!(f, "'{:?}", value.borrow()),
+            Value::Nil => write!(f, "()"),
+            Value::Bool(b) => if *b { write!(f, "#t") } else { write!(f, "#f") },
+            Value::Num(num) => write!(f, "{}", num),
+            Value::Ident(ident) => write!(f, "{}", ident),
+            Value::Procedure(a, b) => write!(f, "<Procedure {:?} {:?}>", a, b),
+        }
+    }
+}
+
+fn rr_new<T>(t: T) -> Rc<RefCell<T>> {
+    Rc::new(RefCell::new(t))
+}
+
+fn parse<T: Iterator<Item = Token>>(token_stream: &mut Peekable<T>) -> Value {
+    match token_stream.next().unwrap() {
+        Token::LPER => (),
+        Token::QUOTE => {
+            return Value::Quoted(rr_new(syntax_quote(token_stream)));
+        },
+        Token::BOOL(b) => {
+            return Value::Bool(b);
+        },
+        Token::IDENT(ident) => {
+            return Value::Ident(ident);
+        }
+        Token::NUM(num) => {
+            return Value::Num(num);
+        }
+        _ => panic!(),
+    }
+    if let Some(Token::IDENT(ident)) = token_stream.peek().map(|c| c.clone()) {
+        if ident.eq("quote") {
+            token_stream.next();
+            let value = Value::Quoted(rr_new(syntax_quote(token_stream)));
+            if let Some(Token::RPER) = token_stream.next() {
+                return value;
+            } else {
+                panic!("syntax error");
+            }
+        }
+    }
+    let mut tail = rr_new(Value::Nil);
+    let head = Value::Cons(rr_new(syntax_quote(token_stream)), tail.clone());
+    while let Some(peek) = token_stream.peek().map(|c| c.clone()) {
+        match peek {
+            Token::RPER => {
+                token_stream.next();
+                return head;
+            },
+            Token::DOT => {
+                token_stream.next();
+                let value = syntax_quote(token_stream);
+                tail.replace(value);
+                if let Some(Token::RPER) = token_stream.next() {
+                    return head;
+                } else {
+                    panic!();
+                }
+            },
+            _ => {
+                let value = syntax_quote(token_stream);
+                let next_tail = rr_new(Value::Nil);
+                tail.replace(Value::Cons(rr_new(value), next_tail.clone()));
+                tail = next_tail;
+            },
+        }
+    }
+    panic!();
+}
