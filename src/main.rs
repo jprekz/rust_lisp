@@ -10,12 +10,7 @@ use std::rc::Rc;
 
 fn main() {
     let lexer = Lexer::new(stdin().chars().filter_map(|r| r.ok()));
-    /*
-    let lexer = Lexer::new("sss".chars());
-    for token in lexer {
-        println!("{:?}", token);
-    }
-    */
+    let _lexer = Lexer::new("(lambda (x) x)".chars());
     let value = eval(&mut lexer.peekable());
     println!("{:?}", value);
 }
@@ -32,7 +27,15 @@ fn eval<T: Iterator<Item = Token>>(token_stream: &mut Peekable<T>) -> Value {
                     "quote" => syntax_quote(token_stream),
                     "lambda" => syntax_lambda(token_stream),
                     "cons" => syntax_cons(token_stream),
-                    _ => panic!("invalid application"),
+                    _ => {
+                        let app = eval(token_stream);
+                        if let Value::Procedure(args, body) = app {
+                            unimplemented!();
+
+                        } else {
+                            panic!("invalid application");
+                        }
+                    },
                 };
                 if let Some(Token::RPER) = token_stream.next() {
                     return value;
@@ -110,7 +113,32 @@ fn syntax_quote<T: Iterator<Item = Token>>(token_stream: &mut Peekable<T>) -> Va
 }
 
 fn syntax_lambda<T: Iterator<Item = Token>>(token_stream: &mut Peekable<T>) -> Value {
-    unimplemented!()
+    let args = record_one_value(token_stream);
+    let body = record_one_value(token_stream);
+    Value::Procedure(args, body)
+}
+fn record_one_value<T: Iterator<Item = Token>>(token_stream: &mut T) -> Vec<Token> {
+    let mut vec = Vec::new();
+    let mut per_count = 0;
+    for token in token_stream {
+        match &token {
+            Token::LPER => per_count += 1,
+            Token::RPER => per_count -= 1,
+            Token::QUOTE => {
+                vec.push(token);
+                continue;
+            },
+            Token::DOT => panic!(),
+            _ => (),
+        }
+        vec.push(token);
+        if per_count == 0 {
+            return vec;
+        } else if per_count < 0 {
+            panic!();
+        }
+    }
+    panic!();
 }
 
 fn syntax_cons<T: Iterator<Item = Token>>(token_stream: &mut Peekable<T>) -> Value {
@@ -138,7 +166,7 @@ impl std::fmt::Debug for Value {
             Value::Bool(b) => if *b { write!(f, "#t") } else { write!(f, "#f") },
             Value::Num(num) => write!(f, "{}", num),
             Value::Ident(ident) => write!(f, "{}", ident),
-            Value::Procedure(_, _) => write!(f, "<Procedure>"),
+            Value::Procedure(a, b) => write!(f, "<Procedure {:?} {:?}>", a, b),
         }
     }
 }
