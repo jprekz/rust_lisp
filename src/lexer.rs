@@ -11,6 +11,17 @@ pub enum Token {
     NUM(f64),
 }
 
+pub trait PeekableIterator: Iterator {
+    fn peek(&mut self) -> Option<&Self::Item>;
+}
+impl<T: Iterator> PeekableIterator for Peekable<T> {
+    fn peek(&mut self) -> Option<&Self::Item> {
+        self.peek()
+    }
+}
+
+pub type TokenStream = PeekableIterator<Item = Token>;
+
 pub struct Lexer<C: Iterator<Item = char>> {
     reader: Peekable<C>,
 }
@@ -36,16 +47,10 @@ impl<C: Iterator<Item = char>> Iterator for Lexer<C> {
                 ('\'', _) => return Some(Token::QUOTE),
                 ('.', None) => return Some(Token::DOT),
                 ('.', Some(peek)) if !is_identifier_char(peek) => return Some(Token::DOT),
-                ('#', Some(_)) => {
-                    match self.reader.next().unwrap() {
-                        't' => {
-                            return Some(Token::BOOL(true));
-                        },
-                        'f' => {
-                            return Some(Token::BOOL(false));
-                        },
-                        _ => panic!(),
-                    }
+                ('#', Some(_)) => match self.reader.next().unwrap() {
+                    't' => return Some(Token::BOOL(true)),
+                    'f' => return Some(Token::BOOL(false)),
+                    _ => panic!(),
                 },
                 (_, _) if is_identifier_char(ch) => {
                     if let Some(peek) = peek {
@@ -67,16 +72,16 @@ impl<C: Iterator<Item = char>> Iterator for Lexer<C> {
 }
 
 fn is_identifier_char(ch: char) -> bool {
-    ch.is_ascii_alphabetic() ||
-    ('-' <= ch && ch <= ':') ||
-    ('<' <= ch && ch <= '@') ||
-    ch == '_' ||
-    ch == '*' ||
-    ch == '+' ||
-    ch == '!' ||
-    ch == '$' ||
-    ch == '%' ||
-    ch == '&' ||
-    ch == '^' ||
+    ch.is_ascii_alphabetic() || //
+    ('-' <= ch && ch <= ':') || //
+    ('<' <= ch && ch <= '@') || //
+    ch == '_' ||                //
+    ch == '*' ||                //
+    ch == '+' ||                //
+    ch == '!' ||                //
+    ch == '$' ||                //
+    ch == '%' ||                //
+    ch == '&' ||                //
+    ch == '^' ||                // disable auto-format
     ch == '~'
 }

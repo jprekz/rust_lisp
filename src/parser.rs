@@ -1,7 +1,8 @@
-use super::lexer::Token;
+use super::env::Env;
+use super::lexer::{Token, TokenStream};
 
 use std::cell::RefCell;
-use std::iter::{Iterator, Peekable};
+use std::iter::Iterator;
 use std::rc::Rc;
 
 #[derive(Clone)]
@@ -12,8 +13,16 @@ pub enum Value {
     Bool(bool),
     Num(f64),
     Ident(String),
-    Syntax(String),
-    Procedure(Vec<String>, Vec<Token>),
+    Syntax(&'static str, fn(&mut TokenStream, &Env) -> Value),
+    Closure(Vec<String>, Vec<Token>, Env),
+}
+impl Value {
+    pub fn try_into_num(self) -> Option<f64> {
+        match self {
+            Value::Num(a) => Some(a),
+            _ => None,
+        }
+    }
 }
 impl ::std::fmt::Debug for Value {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
@@ -21,11 +30,11 @@ impl ::std::fmt::Debug for Value {
             Value::Cons(car, cdr) => write!(f, "({:?} . {:?})", car.borrow(), cdr.borrow()),
             Value::Quoted(value) => write!(f, "'{:?}", value.borrow()),
             Value::Nil => write!(f, "()"),
-            Value::Bool(b) => if *b { write!(f, "#t") } else { write!(f, "#f") },
+            Value::Bool(b) => write!(f, "{}", if *b { "#t" } else { "#f" }),
             Value::Num(num) => write!(f, "{}", num),
             Value::Ident(ident) => write!(f, "{}", ident),
-            Value::Syntax(name) => write!(f, "#<syntax {}>", name),
-            Value::Procedure(a, b) => write!(f, "#<procedure {:?} {:?}>", a, b),
+            Value::Syntax(name, _) => write!(f, "#<syntax {}>", name),
+            Value::Closure(a, b, _) => write!(f, "#<closure {:?} {:?}>", a, b),
         }
     }
 }
@@ -34,15 +43,15 @@ pub fn rr_new<T>(t: T) -> Rc<RefCell<T>> {
     Rc::new(RefCell::new(t))
 }
 
-pub fn parse<T: Iterator<Item = Token>>(token_stream: &mut Peekable<T>) -> Value {
+pub fn parse(token_stream: &mut TokenStream) -> Value {
     match token_stream.next().unwrap() {
         Token::LPER => (),
         Token::QUOTE => {
             return Value::Quoted(rr_new(parse(token_stream)));
-        },
+        }
         Token::BOOL(b) => {
             return Value::Bool(b);
-        },
+        }
         Token::IDENT(ident) => {
             return Value::Ident(ident);
         }
@@ -69,7 +78,7 @@ pub fn parse<T: Iterator<Item = Token>>(token_stream: &mut Peekable<T>) -> Value
             Token::RPER => {
                 token_stream.next();
                 return head;
-            },
+            }
             Token::DOT => {
                 token_stream.next();
                 let value = parse(token_stream);
@@ -79,19 +88,19 @@ pub fn parse<T: Iterator<Item = Token>>(token_stream: &mut Peekable<T>) -> Value
                 } else {
                     panic!();
                 }
-            },
+            }
             _ => {
                 let value = parse(token_stream);
                 let next_tail = rr_new(Value::Nil);
                 tail.replace(Value::Cons(rr_new(value), next_tail.clone()));
                 tail = next_tail;
-            },
+            }
         }
     }
     panic!();
 }
 
-pub fn parse_to_vec<T: Iterator<Item = Token>>(token_stream: &mut T) -> Vec<Token> {
+pub fn parse_to_vec<T: Iterator<Item = Token>>(token_stream: T) -> Vec<Token> {
     let mut vec = Vec::new();
     let mut per_count = 0;
     for token in token_stream {
@@ -101,7 +110,7 @@ pub fn parse_to_vec<T: Iterator<Item = Token>>(token_stream: &mut T) -> Vec<Toke
             Token::QUOTE => {
                 vec.push(token);
                 continue;
-            },
+            }
             Token::DOT => panic!(),
             _ => (),
         }
@@ -114,4 +123,3 @@ pub fn parse_to_vec<T: Iterator<Item = Token>>(token_stream: &mut T) -> Vec<Toke
     }
     panic!();
 }
-
