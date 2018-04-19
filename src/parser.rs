@@ -13,7 +13,7 @@ pub enum Value {
     Num(f64),
     Ident(String),
     Syntax(String),
-    Procedure(Vec<Token>, Vec<Token>),
+    Procedure(Vec<String>, Vec<Token>),
 }
 impl ::std::fmt::Debug for Value {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
@@ -24,8 +24,8 @@ impl ::std::fmt::Debug for Value {
             Value::Bool(b) => if *b { write!(f, "#t") } else { write!(f, "#f") },
             Value::Num(num) => write!(f, "{}", num),
             Value::Ident(ident) => write!(f, "{}", ident),
-            Value::Syntax(name) => write!(f, "<Syntax {}>", name),
-            Value::Procedure(a, b) => write!(f, "<Procedure {:?} {:?}>", a, b),
+            Value::Syntax(name) => write!(f, "#<syntax {}>", name),
+            Value::Procedure(a, b) => write!(f, "#<procedure {:?} {:?}>", a, b),
         }
     }
 }
