@@ -67,3 +67,14 @@ impl<'a> Iterator for EvalIter<'a> {
         Some(eval(self.token_stream, self.env))
     }
 }
+
+pub fn eval_value(value: Value, env: &Env) -> Value {
+    match value {
+        Value::Cons(car, cdr) => car.borrow().clone(),
+        Value::Quoted(value) => value.borrow().clone(),
+        Value::Ident(ident) => {
+            env.get(ident).unwrap()
+        },
+        other => other,
+    }
+}
