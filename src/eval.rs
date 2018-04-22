@@ -11,6 +11,13 @@ pub fn eval(token_stream: &mut TokenStream, env: &Env) -> Value {
             }
             let value = match eval(token_stream, env) {
                 Value::Syntax(_name, f) => f(token_stream, env),
+                Value::Subr(_name, f) => {
+                    let mut eval_iter = EvalIter {
+                        token_stream,
+                        env,
+                    };
+                    f(&eval_iter)
+                },
                 Value::Closure(args, body, closure_env) => {
                     let mut extended_env = closure_env.extend();
                     for arg in args {
@@ -28,6 +35,8 @@ pub fn eval(token_stream: &mut TokenStream, env: &Env) -> Value {
             }
         }
         Token::RPER => panic!("syntax error"),
+        Token::LBRACE => panic!("syntax error"),
+        Token::RBRACE => panic!("syntax error"),
         Token::QUOTE => parse(token_stream),
         Token::DOT => panic!("syntax error"),
         Token::BOOL(b) => Value::Bool(b),
@@ -39,5 +48,22 @@ pub fn eval(token_stream: &mut TokenStream, env: &Env) -> Value {
             }
         }
         Token::NUM(num) => Value::Num(num),
+    }
+}
+
+pub struct EvalIter<'a> {
+    token_stream: &'a mut TokenStream,
+    env: &'a Env,
+}
+impl<'a> Iterator for EvalIter<'a> {
+    type Item = Value;
+    fn next(&mut self) -> Option<Value> {
+        match self.token_stream.peek() {
+            Some(Token::RPER) => return None,
+            Some(Token::DOT) => return None,
+            None => return None,
+            _ => (),
+        }
+        Some(eval(self.token_stream, self.env))
     }
 }

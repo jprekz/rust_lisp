@@ -14,6 +14,7 @@ pub enum Value {
     Num(f64),
     Ident(String),
     Syntax(&'static str, fn(&mut TokenStream, &Env) -> Value),
+    Subr(&'static str, fn(&Iterator<Item=Value>) -> Value),
     Closure(Vec<String>, Vec<Token>, Env),
 }
 impl Value {
@@ -34,6 +35,7 @@ impl ::std::fmt::Debug for Value {
             Value::Num(num) => write!(f, "{}", num),
             Value::Ident(ident) => write!(f, "{}", ident),
             Value::Syntax(name, _) => write!(f, "#<syntax {}>", name),
+            Value::Subr(name, _) => write!(f, "#<subr {}>", name),
             Value::Closure(a, b, _) => write!(f, "#<closure {:?} {:?}>", a, b),
         }
     }

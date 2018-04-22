@@ -4,6 +4,8 @@ use std::iter::{Iterator, Peekable};
 pub enum Token {
     LPER,
     RPER,
+    LBRACE,
+    RBRACE,
     QUOTE,
     DOT,
     BOOL(bool),
@@ -44,6 +46,8 @@ impl<C: Iterator<Item = char>> Iterator for Lexer<C> {
             match (ch, peek) {
                 ('(', _) => return Some(Token::LPER),
                 (')', _) => return Some(Token::RPER),
+                ('{', _) => return Some(Token::LBRACE),
+                ('}', _) => return Some(Token::RBRACE),
                 ('\'', _) => return Some(Token::QUOTE),
                 ('.', None) => return Some(Token::DOT),
                 ('.', Some(peek)) if !is_identifier_char(peek) => return Some(Token::DOT),
@@ -71,6 +75,8 @@ impl<C: Iterator<Item = char>> Iterator for Lexer<C> {
     }
 }
 
+// return true if ch is one of extended identifier characters:
+// ! $ % & * + - . / : < = > ? @ ^ _ ~
 fn is_identifier_char(ch: char) -> bool {
     ch.is_ascii_alphabetic() || //
     ('-' <= ch && ch <= ':') || //

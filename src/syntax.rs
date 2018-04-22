@@ -5,13 +5,34 @@ use super::parser::{parse, parse_to_vec, rr_new, Value};
 
 pub static SYNTAX: &'static [(&'static str, fn(&mut TokenStream, &Env) -> Value)] = &[
     ("define", |token_stream, env| {
-        let symbol = match token_stream.next() {
-            Some(Token::IDENT(ident)) => ident,
+        match token_stream.next() {
+            Some(Token::IDENT(ident)) => {
+                let value = eval(token_stream, env);
+                env.insert(ident, value);
+                Value::Bool(true)
+            }
+            Some(Token::LPER) => {
+                let ident = match token_stream.next() {
+                    Some(Token::IDENT(ident)) => ident,
+                    _ => panic!("syntax error"),
+                };
+                let mut args = Vec::new();
+                while let Some(token) = token_stream.next() {
+                    match token {
+                        Token::IDENT(ident) => {
+                            args.push(ident);
+                        }
+                        Token::RPER => break,
+                        _ => panic!("syntax error"),
+                    }
+                }
+                let body = parse_to_vec(token_stream);
+                let value = Value::Closure(args, body, env.clone());
+                env.insert(ident, value);
+                Value::Bool(true)
+            }
             _ => panic!("syntax error"),
-        };
-        let value = eval(token_stream, env);
-        env.insert(symbol, value);
-        Value::Bool(true)
+        }
     }),
     ("quote", |token_stream, _env| parse(token_stream)),
     ("lambda", |token_stream, env| {

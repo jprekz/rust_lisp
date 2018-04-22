@@ -20,5 +20,6 @@ fn main() {
         print!("> ");
         io::stdout().flush().unwrap();
         println!("{:?}", eval(&mut lexer, &env));
+        println!("");
     }
 }
