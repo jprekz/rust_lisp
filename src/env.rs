@@ -1,5 +1,5 @@
-use super::parser::Value;
 use super::syntax::SYNTAX;
+use super::value::Value;
 
 use std::cell::RefCell;
 use std::collections::HashMap;

@@ -5,7 +5,9 @@ mod eval;
 mod lexer;
 mod parser;
 mod syntax;
+mod value;
 
+use parser::parse;
 use env::Env;
 use eval::eval;
 use lexer::Lexer;
@@ -19,7 +21,7 @@ fn main() {
     loop {
         print!("> ");
         io::stdout().flush().unwrap();
-        println!("{:?}", eval(&mut lexer, &env));
+        println!("{:?}", eval(parse(&mut lexer), &env));
         println!("");
     }
 }
