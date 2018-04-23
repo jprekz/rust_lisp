@@ -22,9 +22,12 @@ pub fn eval(value: Value, env: &Env) -> Value {
                 other => panic!("unexcepted value: {:?}", other)
             }
         }
-        Value::Quoted(value) => value.borrow().clone(),
+        Value::Quoted(value) => value.to_value(),
         Value::Ident(ident) => {
-            env.get(ident).unwrap()
+            match env.get(ident.clone()) {
+                Some(value) => value,
+                None => panic!("unbound variable: {}", ident)
+            }
         },
         other => other,
     }

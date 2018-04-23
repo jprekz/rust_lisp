@@ -54,7 +54,7 @@ impl<C: Iterator<Item = char>> Iterator for Lexer<C> {
                 ('#', Some(_)) => match self.reader.next().unwrap() {
                     't' => return Some(Token::BOOL(true)),
                     'f' => return Some(Token::BOOL(false)),
-                    _ => panic!(),
+                    _ => panic!("lexer error"),
                 },
                 (_, _) if is_identifier_char(ch) => {
                     if let Some(peek) = peek {

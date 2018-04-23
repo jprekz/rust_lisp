@@ -12,7 +12,7 @@ impl RefValue {
     }
 }
 impl RefValue {
-    pub fn to_value(self) -> Value {
+    pub fn to_value(&self) -> Value {
         self.borrow().clone()
     }
 }
@@ -44,7 +44,7 @@ impl Value {
     pub fn try_into_cons(self) -> Option<(Value, Value)> {
         match self {
             Value::Cons(car, cdr) => {
-                Some((car.borrow().clone(), cdr.borrow().clone()))
+                Some((car.to_value(), cdr.to_value()))
             }
             _ => None,
         }

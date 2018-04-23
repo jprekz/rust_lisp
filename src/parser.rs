@@ -2,21 +2,21 @@ use super::lexer::{Token, TokenStream};
 use super::value::{Value, RefValue};
 
 pub fn parse(token_stream: &mut TokenStream) -> Value {
-    match token_stream.next().unwrap() {
-        Token::LPER => (),
-        Token::QUOTE => {
+    match token_stream.next() {
+        Some(Token::LPER) => (),
+        Some(Token::QUOTE) => {
             return Value::Quoted(RefValue::new(parse(token_stream)));
         }
-        Token::BOOL(b) => {
+        Some(Token::BOOL(b)) => {
             return Value::Bool(b);
         }
-        Token::IDENT(ident) => {
+        Some(Token::IDENT(ident)) => {
             return Value::Ident(ident);
         }
-        Token::NUM(num) => {
+        Some(Token::NUM(num)) => {
             return Value::Num(num);
         }
-        _ => panic!(),
+        _ => panic!("syntax error"),
     }
     if let Some(Token::IDENT(ident)) = token_stream.peek().map(|c| c.clone()) {
         if ident.eq("quote") {
@@ -44,7 +44,7 @@ pub fn parse(token_stream: &mut TokenStream) -> Value {
                 if let Some(Token::RPER) = token_stream.next() {
                     return head;
                 } else {
-                    panic!();
+                    panic!("syntax error");
                 }
             }
             _ => {
@@ -55,5 +55,5 @@ pub fn parse(token_stream: &mut TokenStream) -> Value {
             }
         }
     }
-    panic!();
+    panic!("syntax error");
 }
