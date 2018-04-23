@@ -1,7 +1,7 @@
 use super::env::Env;
-use super::lexer::{TokenStream, Token};
-use super::parser::{parse, Value};
+use super::parser::Value;
 
+/*
 pub fn eval(token_stream: &mut TokenStream, env: &Env) -> Value {
     match token_stream.next().unwrap() {
         Token::LPER => {
@@ -67,10 +67,13 @@ impl<'a> Iterator for EvalIter<'a> {
         Some(eval(self.token_stream, self.env))
     }
 }
+*/
 
-pub fn eval_value(value: Value, env: &Env) -> Value {
+pub fn eval(value: &Value, env: &Env) -> Value {
     match value {
-        Value::Cons(car, cdr) => car.borrow().clone(),
+        Value::Cons(car, cdr) => {
+            let f = eval(car.borrow(), env);
+        }
         Value::Quoted(value) => value.borrow().clone(),
         Value::Ident(ident) => {
             env.get(ident).unwrap()
