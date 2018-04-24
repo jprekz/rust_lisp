@@ -3,66 +3,72 @@ use super::eval::eval;
 use super::value::{Value, RefValue};
 
 pub static SYNTAX: &'static [(&'static str, fn(Value, &Env) -> Value)] = &[
-    ("define", |mut arg, env| {
-        match arg.next().unwrap() {
+    ("define", |mut args, env| {
+        match args.next().unwrap() {
             Value::Ident(ident) => {
-                let value = eval(arg.next().unwrap(), env);
+                let value = eval(args.next().unwrap(), env);
                 env.insert(ident, value);
                 Value::Bool(true)
             }
-            Value::Cons(ident, args) => {
-                let ident = ident.to_value().try_into_ident().unwrap();
-                let body = arg.next().unwrap();
-                let _ = arg.try_into_nil().unwrap();
-                let value = Value::Closure(args, RefValue::new(body), env.clone());
-                env.insert(ident, value);
+            Value::Cons(defun_ident, defun_args) => {
+                let body = args.next().unwrap();
+                let _ = args.try_into_nil().unwrap();
+                let defun_ident = defun_ident.to_value().try_into_ident().unwrap();
+                let value = Value::Closure(defun_args, RefValue::new(body), env.clone());
+                env.insert(defun_ident, value);
                 Value::Bool(true)
             }
             _ => panic!("syntax error"),
         }
     }),
-    ("quote", |arg, _env| arg.clone()),
-    ("lambda", |arg, env| {
-        let (car, cdr) = arg.try_into_cons().unwrap();
+    ("quote", |args, _env| args.clone()),
+    ("lambda", |args, env| {
+        let (car, cdr) = args.try_into_cons().unwrap();
         let args = car.clone();
         let (car, cdr) = cdr.try_into_cons().unwrap();
         let body = car.clone();
         let _ = cdr.try_into_nil().unwrap();
         Value::Closure(RefValue::new(args), RefValue::new(body), env.clone())
     }),
-    ("cons", |arg, _env| {
-        arg.clone()
+    ("if", |mut args, env| {
+        let cond = eval(args.next().unwrap(), env);
+        let t = args.next().unwrap();
+        let f = args.next().unwrap();
+        if let Some(false) = cond.try_into_bool() {
+            eval(f, env)
+        } else {
+            eval(t, env)
+        }
     }),
-    ("+", |mut arg, _env| {
+    ("cons", |args, _env| {
+        args.clone()
+    }),
+    ("+", |args, env| {
         let mut acc = 0.0;
-        while let Some((val, next_arg)) = arg.try_into_cons() {
-            arg = next_arg;
+        for val in args.map(|arg| eval(arg, env)) {
             acc += val.try_into_num().unwrap();
         }
         Value::Num(acc)
     }),
-    ("-", |arg, _env| {
-        let (val, mut arg) = arg.try_into_cons().unwrap();
-        let mut acc = val.try_into_num().unwrap();
-        while let Some((val, next_arg)) = arg.try_into_cons() {
-            arg = next_arg;
+    ("-", |args, env| {
+        let mut args = args.map(|arg| eval(arg, env));
+        let mut acc = args.next().unwrap().try_into_num().unwrap();
+        for val in args.map(|arg| eval(arg, env)) {
             acc -= val.try_into_num().unwrap();
         }
         Value::Num(acc)
     }),
-    ("*", |mut arg, _env| {
+    ("*", |args, env| {
         let mut acc = 1.0;
-        while let Some((val, next_arg)) = arg.try_into_cons() {
-            arg = next_arg;
+        for val in args.map(|arg| eval(arg, env)) {
             acc *= val.try_into_num().unwrap();
         }
         Value::Num(acc)
     }),
-    ("/", |arg, _env| {
-        let (val, mut arg) = arg.try_into_cons().unwrap();
-        let mut acc = val.try_into_num().unwrap();
-        while let Some((val, next_arg)) = arg.try_into_cons() {
-            arg = next_arg;
+    ("/", |args, env| {
+        let mut args = args.map(|arg| eval(arg, env));
+        let mut acc = args.next().unwrap().try_into_num().unwrap();
+        for val in args.map(|arg| eval(arg, env)) {
             acc /= val.try_into_num().unwrap();
         }
         Value::Num(acc)

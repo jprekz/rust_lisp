@@ -13,8 +13,8 @@ pub fn eval(value: Value, env: &Env) -> Value {
                 Value::Closure(closure_args, closure_body, closure_env) => {
                     let mut extended_env = closure_env.extend();
                     for closure_arg in closure_args.to_value() {
-                        let ident = closure_arg.try_into_ident().unwrap();
-                        let value = eval(args.next().unwrap(), env);
+                        let ident = closure_arg.try_into_ident().expect("syntax error");
+                        let value = eval(args.next().expect("syntax error"), env);
                         extended_env.insert(ident, value);
                     }
                     eval(closure_body.to_value(), &extended_env)

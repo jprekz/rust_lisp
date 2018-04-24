@@ -2,7 +2,6 @@ use super::env::Env;
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::ops::Deref;
 
 #[derive(Clone, Debug)]
 pub struct RefValue(Rc<RefCell<Value>>);
@@ -10,16 +9,13 @@ impl RefValue {
     pub fn new(value: Value) -> RefValue {
         RefValue(Rc::new(RefCell::new(value)))
     }
-}
-impl RefValue {
+
     pub fn to_value(&self) -> Value {
-        self.borrow().clone()
+        self.0.borrow().clone()
     }
-}
-impl Deref for RefValue {
-    type Target = Rc<RefCell<Value>>;
-    fn deref(&self) -> &Rc<RefCell<Value>> {
-        &self.0
+
+    pub fn replace(&self, value: Value) -> Value {
+        self.0.replace(value)
     }
 }
 
@@ -34,6 +30,7 @@ pub enum Value {
     Syntax(&'static str, fn(Value, &Env) -> Value),
     Closure(RefValue, RefValue, Env),
 }
+
 impl Value {
     pub fn try_into_nil(self) -> Option<()> {
         match self {
@@ -45,6 +42,14 @@ impl Value {
         match self {
             Value::Cons(car, cdr) => {
                 Some((car.to_value(), cdr.to_value()))
+            }
+            _ => None,
+        }
+    }
+    pub fn try_into_bool(self) -> Option<bool> {
+        match self {
+            Value::Bool(b) => {
+                Some(b)
             }
             _ => None,
         }
@@ -62,12 +67,13 @@ impl Value {
         }
     }
 }
+
 impl ::std::fmt::Debug for Value {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
             Value::Nil => write!(f, "()"),
-            Value::Cons(car, cdr) => write!(f, "({:?} . {:?})", car.borrow(), cdr.borrow()),
-            Value::Quoted(value) => write!(f, "'{:?}", value.borrow()),
+            Value::Cons(car, cdr) => write!(f, "({:?} . {:?})", car.0.borrow(), cdr.0.borrow()),
+            Value::Quoted(value) => write!(f, "'{:?}", value.0.borrow()),
             Value::Bool(b) => write!(f, "{}", if *b { "#t" } else { "#f" }),
             Value::Num(num) => write!(f, "{}", num),
             Value::Ident(ident) => write!(f, "{}", ident),
@@ -83,8 +89,8 @@ impl Iterator for Value {
         match self.clone() {
             Value::Nil => None,
             Value::Cons(car, cdr) => {
-                *self = cdr.borrow().clone();
-                Some(car.borrow().clone())
+                *self = cdr.to_value();
+                Some(car.to_value())
             }
             other => {
                 *self = Value::Nil;
@@ -93,3 +99,4 @@ impl Iterator for Value {
         }
     }
 }
+

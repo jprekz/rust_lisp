@@ -18,16 +18,23 @@ pub fn parse(token_stream: &mut TokenStream) -> Value {
         }
         _ => panic!("syntax error"),
     }
-    if let Some(Token::IDENT(ident)) = token_stream.peek().map(|c| c.clone()) {
-        if ident.eq("quote") {
-            token_stream.next();
-            let value = Value::Quoted(RefValue::new(parse(token_stream)));
-            if let Some(Token::RPER) = token_stream.next() {
-                return value;
-            } else {
-                panic!("syntax error");
+    match token_stream.peek().map(|c| c.clone()) {
+        Some(Token::IDENT(ident)) => {
+            if ident.eq("quote") {
+                token_stream.next();
+                let value = Value::Quoted(RefValue::new(parse(token_stream)));
+                if let Some(Token::RPER) = token_stream.next() {
+                    return value;
+                } else {
+                    panic!("syntax error");
+                }
             }
         }
+        Some(Token::RPER) => {
+            token_stream.next();
+            return Value::Nil;
+        }
+        _ => (),
     }
     let mut tail = RefValue::new(Value::Nil);
     let head = Value::Cons(RefValue::new(parse(token_stream)), tail.clone());
