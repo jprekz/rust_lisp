@@ -2,6 +2,7 @@ use super::env::Env;
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::ops::Deref;
 
 #[derive(Clone)]
 pub struct RefValue(Rc<RefCell<Value>>);
@@ -36,7 +37,7 @@ impl SyntaxFn {
         SyntaxFn(f)
     }
 }
-impl ::std::ops::Deref for SyntaxFn {
+impl Deref for SyntaxFn {
     type Target = fn(Value, &Env) -> Value;
     fn deref(&self) -> &Self::Target {
         &self.0
