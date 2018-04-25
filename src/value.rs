@@ -3,7 +3,7 @@ use super::env::Env;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RefValue(Rc<RefCell<Value>>);
 impl RefValue {
     pub fn new(value: Value) -> RefValue {
@@ -21,6 +21,11 @@ impl RefValue {
 impl PartialEq for RefValue {
     fn eq(&self, other: &RefValue) -> bool {
         Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+impl ::std::fmt::Debug for RefValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        write!(f, "{:?}", self.0.borrow())
     }
 }
 
@@ -95,7 +100,20 @@ impl ::std::fmt::Debug for Value {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
             Value::Nil => write!(f, "()"),
-            Value::Cons(car, cdr) => write!(f, "({:?} . {:?})", car.0.borrow(), cdr.0.borrow()),
+            Value::Cons(car, cdr) => {
+                write!(f, "({:?}", car.0.borrow())?;
+                fn fmt_l(next: RefValue, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+                    match *next.0.borrow() {
+                        Value::Cons(ref car, ref cdr) => {
+                            write!(f, " {:?}", car.0.borrow())?;
+                            fmt_l(cdr.clone(), f)
+                        }
+                        Value::Nil => write!(f, ")"),
+                        ref other => write!(f, " . {:?})", other),
+                    }
+                }
+                fmt_l(cdr.clone(), f)
+            },
             Value::Quoted(value) => write!(f, "'{:?}", value.0.borrow()),
             Value::Bool(b) => write!(f, "{}", if *b { "#t" } else { "#f" }),
             Value::Num(num) => write!(f, "{}", num),

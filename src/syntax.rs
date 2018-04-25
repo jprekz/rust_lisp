@@ -40,8 +40,10 @@ pub static SYNTAX: &'static [(&'static str, fn(Value, &Env) -> Value)] = &[
             eval(t, env)
         }
     }),
-    ("cons", |args, _env| {
-        args.clone()
+    ("cons", |mut args, env| {
+        let car = eval(args.next().unwrap(), env);
+        let cdr = eval(args.next().unwrap(), env);
+        Value::Cons(RefValue::new(car), RefValue::new(cdr))
     }),
     ("=", |mut args, env| {
         let first = args.next().map(|arg| eval(arg, env)).unwrap();

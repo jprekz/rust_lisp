@@ -12,7 +12,7 @@ use env::Env;
 use eval::eval;
 use lexer::Lexer;
 
-use std::io::{self, stdin, Read, Write};
+use std::io::{stdin, stdout, Read, Write};
 
 fn main() {
     let lexer = Lexer::new(stdin().chars().filter_map(|r| r.ok()));
@@ -20,7 +20,7 @@ fn main() {
     let env = Env::new_default();
     loop {
         print!("> ");
-        io::stdout().flush().unwrap();
+        stdout().flush().unwrap();
         println!("{:?}", eval(parse(&mut lexer), &env));
         println!("");
     }
