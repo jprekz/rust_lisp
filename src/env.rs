@@ -1,5 +1,5 @@
 use super::syntax::SYNTAX;
-use super::value::Value;
+use super::value::*;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -16,7 +16,7 @@ impl Env {
     pub fn new_default() -> Env {
         let mut hash_map = HashMap::new();
         for &(name, f) in SYNTAX {
-            hash_map.insert(name.to_string(), Value::Syntax(name, f));
+            hash_map.insert(name.to_string(), Value::Syntax(name, SyntaxFn::new(f)));
         }
         Env::new(EnvCell {
             inner: hash_map,
@@ -55,6 +55,12 @@ impl Env {
 impl Clone for Env {
     fn clone(&self) -> Env {
         Env(self.0.clone())
+    }
+}
+
+impl PartialEq for Env {
+    fn eq(&self, other: &Env) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
     }
 }
 

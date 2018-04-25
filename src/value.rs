@@ -18,8 +18,32 @@ impl RefValue {
         self.0.replace(value)
     }
 }
+impl PartialEq for RefValue {
+    fn eq(&self, other: &RefValue) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
 
 #[derive(Clone)]
+pub struct SyntaxFn(fn(Value, &Env) -> Value);
+impl SyntaxFn {
+    pub fn new(f: fn(Value, &Env) -> Value) -> SyntaxFn {
+        SyntaxFn(f)
+    }
+}
+impl ::std::ops::Deref for SyntaxFn {
+    type Target = fn(Value, &Env) -> Value;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl PartialEq for SyntaxFn {
+    fn eq(&self, other: &SyntaxFn) -> bool {
+        ::std::ptr::eq(self, other)
+    }
+}
+
+#[derive(Clone, PartialEq)]
 pub enum Value {
     Nil,
     Cons(RefValue, RefValue),
@@ -27,10 +51,9 @@ pub enum Value {
     Bool(bool),
     Num(f64),
     Ident(String),
-    Syntax(&'static str, fn(Value, &Env) -> Value),
+    Syntax(&'static str, SyntaxFn),
     Closure(RefValue, RefValue, Env),
 }
-
 impl Value {
     pub fn try_into_nil(self) -> Option<()> {
         match self {

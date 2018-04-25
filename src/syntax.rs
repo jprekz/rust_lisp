@@ -43,6 +43,15 @@ pub static SYNTAX: &'static [(&'static str, fn(Value, &Env) -> Value)] = &[
     ("cons", |args, _env| {
         args.clone()
     }),
+    ("=", |mut args, env| {
+        let first = args.next().map(|arg| eval(arg, env)).unwrap();
+        for val in args.map(|arg| eval(arg, env)) {
+            if first != val {
+                return Value::Bool(false)
+            }
+        }
+        Value::Bool(true)
+    }),
     ("+", |args, env| {
         let mut acc = 0.0;
         for val in args.map(|arg| eval(arg, env)) {
