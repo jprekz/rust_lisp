@@ -2,11 +2,11 @@ use super::env::Env;
 use super::eval::eval;
 use super::value::{Value, RefValue};
 
-pub static SYNTAX: &'static [(&'static str, fn(Value, &Env) -> Value)] = &[
+pub static SYNTAX: &'static [(&'static str, fn(Value, Env) -> Value)] = &[
     ("define", |mut args, env| {
         match args.next().unwrap() {
             Value::Ident(ident) => {
-                let value = eval(args.next().unwrap(), env);
+                let value = eval(args.next().unwrap(), env.clone());
                 env.insert(ident, value);
                 Value::Bool(true)
             }
@@ -31,7 +31,7 @@ pub static SYNTAX: &'static [(&'static str, fn(Value, &Env) -> Value)] = &[
         Value::Closure(RefValue::new(args), RefValue::new(body), env.clone())
     }),
     ("if", |mut args, env| {
-        let cond = eval(args.next().unwrap(), env);
+        let cond = eval(args.next().unwrap(), env.clone());
         let t = args.next().unwrap();
         let f = args.next().unwrap();
         if let Some(false) = cond.try_into_bool() {
@@ -41,13 +41,13 @@ pub static SYNTAX: &'static [(&'static str, fn(Value, &Env) -> Value)] = &[
         }
     }),
     ("cons", |mut args, env| {
-        let car = eval(args.next().unwrap(), env);
-        let cdr = eval(args.next().unwrap(), env);
+        let car = eval(args.next().unwrap(), env.clone());
+        let cdr = eval(args.next().unwrap(), env.clone());
         Value::Cons(RefValue::new(car), RefValue::new(cdr))
     }),
     ("=", |mut args, env| {
-        let first = args.next().map(|arg| eval(arg, env)).unwrap();
-        for val in args.map(|arg| eval(arg, env)) {
+        let first = args.next().map(|arg| eval(arg, env.clone())).unwrap();
+        for val in args.map(|arg| eval(arg, env.clone())) {
             if first != val {
                 return Value::Bool(false)
             }
@@ -56,30 +56,30 @@ pub static SYNTAX: &'static [(&'static str, fn(Value, &Env) -> Value)] = &[
     }),
     ("+", |args, env| {
         let mut acc = 0.0;
-        for val in args.map(|arg| eval(arg, env)) {
+        for val in args.map(|arg| eval(arg, env.clone())) {
             acc += val.try_into_num().unwrap();
         }
         Value::Num(acc)
     }),
     ("-", |args, env| {
-        let mut args = args.map(|arg| eval(arg, env));
+        let mut args = args.map(|arg| eval(arg, env.clone()));
         let mut acc = args.next().unwrap().try_into_num().unwrap();
-        for val in args.map(|arg| eval(arg, env)) {
+        for val in args.map(|arg| eval(arg, env.clone())) {
             acc -= val.try_into_num().unwrap();
         }
         Value::Num(acc)
     }),
     ("*", |args, env| {
         let mut acc = 1.0;
-        for val in args.map(|arg| eval(arg, env)) {
+        for val in args.map(|arg| eval(arg, env.clone())) {
             acc *= val.try_into_num().unwrap();
         }
         Value::Num(acc)
     }),
     ("/", |args, env| {
-        let mut args = args.map(|arg| eval(arg, env));
+        let mut args = args.map(|arg| eval(arg, env.clone()));
         let mut acc = args.next().unwrap().try_into_num().unwrap();
-        for val in args.map(|arg| eval(arg, env)) {
+        for val in args.map(|arg| eval(arg, env.clone())) {
             acc /= val.try_into_num().unwrap();
         }
         Value::Num(acc)

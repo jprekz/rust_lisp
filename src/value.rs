@@ -15,6 +15,7 @@ pub enum Value {
     Ident(String),
     Syntax(&'static str, SyntaxFn),
     Closure(RefValue, RefValue, Env),
+    Subr(&'static str, SyntaxFn),
 }
 impl TryFrom<Value> for () {
     type Error = String;
@@ -86,6 +87,7 @@ impl ::std::fmt::Debug for Value {
             Value::Ident(ident) => write!(f, "{}", ident),
             Value::Syntax(name, _) => write!(f, "#<syntax {}>", name),
             Value::Closure(a, b, _) => write!(f, "#<closure {:?} {:?}>", a, b),
+            Value::Subr(name, _) => write!(f, "#<subr {}>", name),
         }
     }
 }
@@ -134,14 +136,14 @@ impl ::std::fmt::Debug for RefValue {
 }
 
 #[derive(Clone)]
-pub struct SyntaxFn(fn(Value, &Env) -> Value);
+pub struct SyntaxFn(fn(Value, Env) -> Value);
 impl SyntaxFn {
-    pub fn new(f: fn(Value, &Env) -> Value) -> SyntaxFn {
+    pub fn new(f: fn(Value, Env) -> Value) -> SyntaxFn {
         SyntaxFn(f)
     }
 }
 impl Deref for SyntaxFn {
-    type Target = fn(Value, &Env) -> Value;
+    type Target = fn(Value, Env) -> Value;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
