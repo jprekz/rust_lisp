@@ -3,51 +3,7 @@ use super::env::Env;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::ops::Deref;
-
-#[derive(Clone)]
-pub struct RefValue(Rc<RefCell<Value>>);
-impl RefValue {
-    pub fn new(value: Value) -> RefValue {
-        RefValue(Rc::new(RefCell::new(value)))
-    }
-
-    pub fn to_value(&self) -> Value {
-        self.0.borrow().clone()
-    }
-
-    pub fn replace(&self, value: Value) -> Value {
-        self.0.replace(value)
-    }
-}
-impl PartialEq for RefValue {
-    fn eq(&self, other: &RefValue) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
-    }
-}
-impl ::std::fmt::Debug for RefValue {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        write!(f, "{:?}", self.0.borrow())
-    }
-}
-
-#[derive(Clone)]
-pub struct SyntaxFn(fn(Value, &Env) -> Value);
-impl SyntaxFn {
-    pub fn new(f: fn(Value, &Env) -> Value) -> SyntaxFn {
-        SyntaxFn(f)
-    }
-}
-impl Deref for SyntaxFn {
-    type Target = fn(Value, &Env) -> Value;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl PartialEq for SyntaxFn {
-    fn eq(&self, other: &SyntaxFn) -> bool {
-        ::std::ptr::eq(self, other)
-    }
-}
+use std::convert::TryFrom;
 
 #[derive(Clone, PartialEq)]
 pub enum Value {
@@ -59,6 +15,15 @@ pub enum Value {
     Ident(String),
     Syntax(&'static str, SyntaxFn),
     Closure(RefValue, RefValue, Env),
+}
+impl TryFrom<Value> for () {
+    type Error = String;
+    fn try_from(value: Value) -> Result<(), String> {
+        match value {
+            Value::Nil => Ok(()),
+            _ => Err("downcast error".to_string()),
+        }
+    }
 }
 impl Value {
     pub fn try_into_nil(self) -> Option<()> {
@@ -142,3 +107,47 @@ impl Iterator for Value {
     }
 }
 
+#[derive(Clone)]
+pub struct RefValue(Rc<RefCell<Value>>);
+impl RefValue {
+    pub fn new(value: Value) -> RefValue {
+        RefValue(Rc::new(RefCell::new(value)))
+    }
+
+    pub fn to_value(&self) -> Value {
+        self.0.borrow().clone()
+    }
+
+    pub fn replace(&self, value: Value) -> Value {
+        self.0.replace(value)
+    }
+}
+impl PartialEq for RefValue {
+    fn eq(&self, other: &RefValue) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+impl ::std::fmt::Debug for RefValue {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        write!(f, "{:?}", self.0.borrow())
+    }
+}
+
+#[derive(Clone)]
+pub struct SyntaxFn(fn(Value, &Env) -> Value);
+impl SyntaxFn {
+    pub fn new(f: fn(Value, &Env) -> Value) -> SyntaxFn {
+        SyntaxFn(f)
+    }
+}
+impl Deref for SyntaxFn {
+    type Target = fn(Value, &Env) -> Value;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl PartialEq for SyntaxFn {
+    fn eq(&self, other: &SyntaxFn) -> bool {
+        ::std::ptr::eq(self, other)
+    }
+}

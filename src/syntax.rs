@@ -21,7 +21,7 @@ pub static SYNTAX: &'static [(&'static str, fn(Value, &Env) -> Value)] = &[
             _ => panic!("syntax error"),
         }
     }),
-    ("quote", |args, _env| args.clone()),
+    ("quote", |mut args, _env| args.next().unwrap().clone()),
     ("lambda", |args, env| {
         let (car, cdr) = args.try_into_cons().unwrap();
         let args = car.clone();
