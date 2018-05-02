@@ -64,3 +64,8 @@ impl PartialEq for Env {
     }
 }
 
+impl ::std::fmt::Debug for Env {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+            write!(f, "<Env>")
+    }
+}

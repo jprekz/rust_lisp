@@ -21,7 +21,7 @@ fn main() {
     loop {
         print!("> ");
         stdout().flush().unwrap();
-        println!("{:?}", eval(parse(&mut lexer), &env));
+        println!("{:?}", eval(parse(&mut lexer), env.clone()));
         println!("");
     }
 }
