@@ -69,17 +69,13 @@ impl Value {
     }
     pub fn try_into_cons(self) -> Option<(Value, Value)> {
         match self {
-            Value::Cons(car, cdr) => {
-                Some((car.to_value(), cdr.to_value()))
-            }
+            Value::Cons(car, cdr) => Some((car.to_value(), cdr.to_value())),
             _ => None,
         }
     }
     pub fn try_into_bool(self) -> Option<bool> {
         match self {
-            Value::Bool(b) => {
-                Some(b)
-            }
+            Value::Bool(b) => Some(b),
             _ => None,
         }
     }
