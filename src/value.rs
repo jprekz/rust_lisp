@@ -1,4 +1,5 @@
 use super::env::Env;
+use super::eval::VM;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -132,14 +133,14 @@ impl ::std::fmt::Debug for RefValue {
 }
 
 #[derive(Clone)]
-pub struct SyntaxFn(fn(Value, Env) -> Value);
+pub struct SyntaxFn(fn(&mut VM));
 impl SyntaxFn {
-    pub fn new(f: fn(Value, Env) -> Value) -> SyntaxFn {
+    pub fn new(f: fn(&mut VM)) -> SyntaxFn {
         SyntaxFn(f)
     }
 }
 impl Deref for SyntaxFn {
-    type Target = fn(Value, Env) -> Value;
+    type Target = fn(&mut VM);
     fn deref(&self) -> &Self::Target {
         &self.0
     }

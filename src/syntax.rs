@@ -1,48 +1,57 @@
-use super::env::Env;
-use super::eval::eval;
-use super::value::{Value, RefValue};
+use super::eval::{StackData, VM};
+use super::value::{RefValue, SyntaxFn, Value};
 
-pub static SYNTAX: &'static [(&'static str, fn(Value, Env) -> Value)] = &[
-    ("define", |mut args, env| {
-        match args.next().unwrap() {
-            Value::Ident(ident) => {
-                let value = eval(args.next().unwrap(), env.clone());
-                env.insert(ident, value);
-                Value::Bool(true)
-            }
-            Value::Cons(defun_ident, defun_args) => {
-                let body = args.next().unwrap();
-                let _ = args.try_into_nil().unwrap();
-                let defun_ident = defun_ident.to_value().try_into_ident().unwrap();
-                let value = Value::Closure(defun_args, RefValue::new(body), env.clone());
-                env.insert(defun_ident, value);
-                Value::Bool(true)
-            }
-            _ => panic!("syntax error"),
+pub static SYNTAX: &'static [(&'static str, fn(&mut VM))] = &[
+    ("define", |vm| match vm.pp.next().unwrap() {
+        Value::Ident(ident) => {
+            while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+            vm.stack.push(StackData::Val(Value::Syntax("define2", SyntaxFn::new(|vm| {
+                if let StackData::Val(value) = vm.stack.pop().unwrap() {
+                    if let StackData::Val(Value::Ident(ident)) = vm.stack.pop().unwrap() {
+                        vm.env.insert(ident, value);
+                        vm.rr = Value::Bool(true);
+                        while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+                        vm.sp -= 1;
+                    } else { panic!() }
+                } else { panic!() }
+            }))));
+            vm.stack.push(StackData::Val(Value::Ident(ident)));
         }
-    }),
-    ("quote", |mut args, _env| args.next().unwrap().clone()),
-    ("lambda", |args, env| {
-        let (car, cdr) = args.try_into_cons().unwrap();
-        let args = car.clone();
-        let (car, cdr) = cdr.try_into_cons().unwrap();
-        let body = car.clone();
-        let _ = cdr.try_into_nil().unwrap();
-        Value::Closure(RefValue::new(args), RefValue::new(body), env.clone())
-    }),
-    ("if", |mut args, env| {
-        let cond = args.next().unwrap();
-        let t = args.next().unwrap();
-        let f = args.next().unwrap();
-        if let Some(false) = cond.try_into_bool() {
-            f
-        } else {
-            t
+        Value::Cons(defun_ident, defun_args) => {
+            let body = vm.pp.next().unwrap();
+            let _ = vm.pp.clone().try_into_nil().unwrap();
+            let defun_ident = defun_ident.to_value().try_into_ident().unwrap();
+            let value = Value::Closure(defun_args, RefValue::new(body), vm.env.clone());
+            vm.env.insert(defun_ident, value);
+            vm.rr = Value::Bool(true);
+            while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+            vm.sp -= 1;
         }
+        _ => panic!("syntax error"),
+    }),
+    ("quote", |vm| {
+        vm.pp.next().unwrap();
+    }),
+    ("lambda", |vm| {
+        let args = vm.pp.next().unwrap();
+        let body = vm.pp.next().unwrap();
+        vm.rr = Value::Closure(RefValue::new(args), RefValue::new(body), vm.env.clone());
+        while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+        vm.sp -= 1;
+    }),
+    ("if", |vm| {
+        while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+        vm.stack.push(StackData::Val(Value::Syntax("if2", SyntaxFn::new(|vm| {
+            if let StackData::Val(Value::Bool(false)) = vm.stack.pop().unwrap() {
+                vm.pp.next();
+            }
+            vm.pp = vm.pp.next().unwrap();
+            while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+        }))));
     }),
 ];
 
-pub static SUBR: &'static [(&'static str, fn(&mut Iterator<Item=Value>) -> Value)] = &[
+pub static SUBR: &'static [(&'static str, fn(&mut Iterator<Item = Value>) -> Value)] = &[
     ("cons", |args| {
         let car = args.next().unwrap();
         let cdr = args.next().unwrap();
@@ -52,7 +61,7 @@ pub static SUBR: &'static [(&'static str, fn(&mut Iterator<Item=Value>) -> Value
         let first = args.next().unwrap();
         for val in args {
             if first != val {
-                return Value::Bool(false)
+                return Value::Bool(false);
             }
         }
         Value::Bool(true)
