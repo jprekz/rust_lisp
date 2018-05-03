@@ -1,6 +1,6 @@
 use super::syntax::SYNTAX;
 use super::syntax::SUBR;
-use super::value::{SubrFn, SyntaxFn, Value};
+use super::value::Value;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -17,10 +17,10 @@ impl Env {
     pub fn new_default() -> Env {
         let mut hash_map = HashMap::new();
         for &(name, f) in SYNTAX {
-            hash_map.insert(name.to_string(), Value::Syntax(name, SyntaxFn::new(f)));
+            hash_map.insert(name.to_string(), Value::Syntax(name, f));
         }
         for &(name, f) in SUBR {
-            hash_map.insert(name.to_string(), Value::Subr(name, SubrFn::new(f)));
+            hash_map.insert(name.to_string(), Value::Subr(name, f));
         }
         Env::new(EnvCell {
             inner: hash_map,

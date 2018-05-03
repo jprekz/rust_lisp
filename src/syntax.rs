@@ -1,11 +1,11 @@
 use super::eval::{StackData, VM};
-use super::value::{RefValue, SyntaxFn, Value};
+use super::value::{RefValue, Value};
 
 pub static SYNTAX: &'static [(&'static str, fn(&mut VM))] = &[
     ("define", |vm| match vm.pp.next().unwrap() {
         Value::Ident(ident) => {
             while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
-            vm.stack.push(StackData::Val(Value::Syntax("define2", SyntaxFn::new(|vm| {
+            vm.stack.push(StackData::Val(Value::Syntax("define2", |vm| {
                 if let StackData::Val(value) = vm.stack.pop().unwrap() {
                     if let StackData::Val(Value::Ident(ident)) = vm.stack.pop().unwrap() {
                         vm.env.insert(ident, value);
@@ -14,7 +14,7 @@ pub static SYNTAX: &'static [(&'static str, fn(&mut VM))] = &[
                         vm.sp -= 1;
                     } else { panic!() }
                 } else { panic!() }
-            }))));
+            })));
             vm.stack.push(StackData::Val(Value::Ident(ident)));
         }
         Value::Cons(defun_ident, defun_args) => {
@@ -41,13 +41,13 @@ pub static SYNTAX: &'static [(&'static str, fn(&mut VM))] = &[
     }),
     ("if", |vm| {
         while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
-        vm.stack.push(StackData::Val(Value::Syntax("if2", SyntaxFn::new(|vm| {
+        vm.stack.push(StackData::Val(Value::Syntax("if2", |vm| {
             if let StackData::Val(Value::Bool(false)) = vm.stack.pop().unwrap() {
                 vm.pp.next();
             }
             vm.pp = vm.pp.next().unwrap();
             while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
-        }))));
+        })));
     }),
 ];
 

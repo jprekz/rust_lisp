@@ -3,10 +3,9 @@ use super::eval::VM;
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::ops::Deref;
 use std::convert::TryFrom;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub enum Value {
     Nil,
     Cons(RefValue, RefValue),
@@ -106,6 +105,39 @@ impl Iterator for Value {
     }
 }
 
+impl PartialEq for Value {
+    fn eq(&self, other: &Value) -> bool {
+        match (self, other) {
+            (Value::Nil, Value::Nil) => true,
+            (Value::Cons(car1, cdr1), Value::Cons(car2, cdr2)) => {
+                car1 == car2 && cdr1 == cdr2
+            }
+            (Value::Quoted(v1), Value::Quoted(v2)) => {
+                v1 == v2
+            }
+            (Value::Bool(b1), Value::Bool(b2)) => {
+                b1 == b2
+            }
+            (Value::Num(n1), Value::Num(n2)) => {
+                n1 == n2
+            }
+            (Value::Ident(i1), Value::Ident(i2)) => {
+                i1 == i2
+            }
+            (Value::Syntax(n1, f1), Value::Syntax(n2, f2)) => {
+                n1 == n2 && ::std::ptr::eq(f1, f2)
+            }
+            (Value::Closure(a1, b1, e1),Value::Closure(a2, b2, e2)) => {
+                a1 == a2 && b1 == b2 && e1 == e2
+            }
+            (Value::Subr(n1, f1), Value::Subr(n2, f2)) => {
+                n1 == n2 && ::std::ptr::eq(f1, f2)
+            }
+            _ => false,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct RefValue(Rc<RefCell<Value>>);
 impl RefValue {
@@ -132,40 +164,5 @@ impl ::std::fmt::Debug for RefValue {
     }
 }
 
-#[derive(Clone)]
-pub struct SyntaxFn(fn(&mut VM));
-impl SyntaxFn {
-    pub fn new(f: fn(&mut VM)) -> SyntaxFn {
-        SyntaxFn(f)
-    }
-}
-impl Deref for SyntaxFn {
-    type Target = fn(&mut VM);
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl PartialEq for SyntaxFn {
-    fn eq(&self, other: &SyntaxFn) -> bool {
-        ::std::ptr::eq(self, other)
-    }
-}
-
-#[derive(Clone)]
-pub struct SubrFn(fn(&mut Iterator<Item=Value>) -> Value);
-impl SubrFn {
-    pub fn new(f: fn(&mut Iterator<Item=Value>) -> Value) -> SubrFn {
-        SubrFn(f)
-    }
-}
-impl Deref for SubrFn {
-    type Target = fn(&mut Iterator<Item=Value>) -> Value;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl PartialEq for SubrFn {
-    fn eq(&self, other: &SubrFn) -> bool {
-        ::std::ptr::eq(self, other)
-    }
-}
+pub type SyntaxFn = fn(&mut VM);
+pub type SubrFn = fn(&mut Iterator<Item=Value>) -> Value;
