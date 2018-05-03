@@ -15,7 +15,7 @@ pub enum Value {
     Ident(String),
     Syntax(&'static str, SyntaxFn),
     Closure(RefValue, RefValue, Env),
-    Subr(&'static str, SyntaxFn),
+    Subr(&'static str, SubrFn),
 }
 impl TryFrom<Value> for () {
     type Error = String;
@@ -149,3 +149,23 @@ impl PartialEq for SyntaxFn {
         ::std::ptr::eq(self, other)
     }
 }
+
+#[derive(Clone)]
+pub struct SubrFn(fn(&mut Iterator<Item=Value>) -> Value);
+impl SubrFn {
+    pub fn new(f: fn(&mut Iterator<Item=Value>) -> Value) -> SubrFn {
+        SubrFn(f)
+    }
+}
+impl Deref for SubrFn {
+    type Target = fn(&mut Iterator<Item=Value>) -> Value;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl PartialEq for SubrFn {
+    fn eq(&self, other: &SubrFn) -> bool {
+        ::std::ptr::eq(self, other)
+    }
+}
+

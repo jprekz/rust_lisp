@@ -31,55 +31,56 @@ pub static SYNTAX: &'static [(&'static str, fn(Value, Env) -> Value)] = &[
         Value::Closure(RefValue::new(args), RefValue::new(body), env.clone())
     }),
     ("if", |mut args, env| {
-        let cond = eval(args.next().unwrap(), env.clone());
+        let cond = args.next().unwrap();
         let t = args.next().unwrap();
         let f = args.next().unwrap();
         if let Some(false) = cond.try_into_bool() {
-            eval(f, env)
+            f
         } else {
-            eval(t, env)
+            t
         }
     }),
-    ("cons", |mut args, env| {
-        let car = eval(args.next().unwrap(), env.clone());
-        let cdr = eval(args.next().unwrap(), env.clone());
+];
+
+pub static SUBR: &'static [(&'static str, fn(&mut Iterator<Item=Value>) -> Value)] = &[
+    ("cons", |args| {
+        let car = args.next().unwrap();
+        let cdr = args.next().unwrap();
         Value::Cons(RefValue::new(car), RefValue::new(cdr))
     }),
-    ("=", |mut args, env| {
-        let first = args.next().map(|arg| eval(arg, env.clone())).unwrap();
-        for val in args.map(|arg| eval(arg, env.clone())) {
+    ("=", |args| {
+        let first = args.next().unwrap();
+        for val in args {
             if first != val {
                 return Value::Bool(false)
             }
         }
         Value::Bool(true)
     }),
-    ("+", |args, env| {
+    ("+", |args| {
         let mut acc = 0.0;
-        for val in args.map(|arg| eval(arg, env.clone())) {
+        for val in args {
             acc += val.try_into_num().unwrap();
         }
         Value::Num(acc)
     }),
-    ("-", |args, env| {
-        let mut args = args.map(|arg| eval(arg, env.clone()));
+    ("-", |args| {
         let mut acc = args.next().unwrap().try_into_num().unwrap();
-        for val in args.map(|arg| eval(arg, env.clone())) {
+        for val in args {
             acc -= val.try_into_num().unwrap();
         }
         Value::Num(acc)
     }),
-    ("*", |args, env| {
+    ("*", |args| {
         let mut acc = 1.0;
-        for val in args.map(|arg| eval(arg, env.clone())) {
+        for val in args {
             acc *= val.try_into_num().unwrap();
         }
         Value::Num(acc)
     }),
-    ("/", |args, env| {
-        let mut args = args.map(|arg| eval(arg, env.clone()));
+    ("/", |args| {
         let mut acc = args.next().unwrap().try_into_num().unwrap();
-        for val in args.map(|arg| eval(arg, env.clone())) {
+        for val in args {
             acc /= val.try_into_num().unwrap();
         }
         Value::Num(acc)
