@@ -169,4 +169,3 @@ impl PartialEq for SubrFn {
         ::std::ptr::eq(self, other)
     }
 }
-

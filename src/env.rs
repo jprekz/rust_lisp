@@ -1,6 +1,6 @@
 use super::syntax::SYNTAX;
 use super::syntax::SUBR;
-use super::value::*;
+use super::value::{SubrFn, SyntaxFn, Value};
 
 use std::cell::RefCell;
 use std::collections::HashMap;
