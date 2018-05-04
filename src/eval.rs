@@ -18,7 +18,6 @@ pub struct VM {
 }
 
 pub fn eval(val: Value, env: Env) -> Value {
-    println!("eval start");
     let mut vm = VM {
         pp: val,
         sp: 0i64,
@@ -27,7 +26,7 @@ pub fn eval(val: Value, env: Env) -> Value {
         env: env,
     };
     loop {
-        println!("rr:{:?} sp:{} pp:{:?} {:?}", vm.rr, vm.sp, vm.pp, vm.stack);
+        //println!("rr:{:?} sp:{} pp:{:?} {:?}", vm.rr, vm.sp, vm.pp, vm.stack);
         match vm.pp.clone() {
             Value::Nil => {
                 if vm.sp == vm.stack.len() as i64 {
@@ -50,13 +49,17 @@ pub fn eval(val: Value, env: Env) -> Value {
                             }
                         }
                         while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
-                        vm.stack.push(StackData::Env(vm.env.clone()));
-                        vm.sp += 1;
                         vm.pp = closure_body.to_value();
                         vm.env = extended_env;
+                        if vm.sp > 0 {
+                            if let StackData::Env(_) = vm.stack[vm.sp as usize - 1] {
+                                continue;
+                            }
+                        }
+                        vm.stack.push(StackData::Env(vm.env.clone()));
+                        vm.sp += 1;
                     }
-                    StackData::Val(Value::Syntax(name, f)) => {
-                        println!("  exec syntax {}", name);
+                    StackData::Val(Value::Syntax(_name, f)) => {
                         f(&mut vm);
                     }
                     StackData::Val(Value::Subr(_name, f)) => {
@@ -76,8 +79,7 @@ pub fn eval(val: Value, env: Env) -> Value {
                         if let Some(StackData::SP(v)) = vm.stack.pop() {
                             vm.sp = v;
                             vm.stack.push(StackData::Val(vm.rr.clone()));
-                            if let StackData::Val(Value::Syntax(name, f)) = vm.stack[vm.sp as usize].clone() {
-                                println!("  exec syntax {}", name);
+                            if let StackData::Val(Value::Syntax(_name, f)) = vm.stack[vm.sp as usize].clone() {
                                 f(&mut vm);
                             }
                         } else {
