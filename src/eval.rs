@@ -24,16 +24,16 @@ pub fn eval(val: Value, env: Env) -> Value {
     let mut vm = VM {
         pp: val,
         sp: 0i64,
-        rr: Value::Nil,
+        rr: Value::Null,
         stack: Vec::new(),
         env: env,
     };
     loop {
         // println!("\nenv:{:?}\tsp:{}\tpp:{:?}\trr:{:?}\nstack: {:?}", vm.env, vm.sp, vm.pp, vm.rr, vm.stack);
         match vm.pp.clone() {
-            Value::Nil => {
+            Value::Null => {
                 if vm.sp == vm.stack.len() as i64 {
-                    vm.rr = Value::Nil;
+                    vm.rr = Value::Null;
                     vm.sp -= 1;
                     continue;
                 }
@@ -118,17 +118,17 @@ pub fn eval(val: Value, env: Env) -> Value {
             }
             Value::Quoted(value) => {
                 vm.rr = value.to_value();
-                vm.pp = Value::Nil;
+                vm.pp = Value::Null;
                 vm.sp -= 1;
             }
             Value::Ident(ident) => {
                 vm.rr = vm.env.get(ident.clone()).expect("unbound variable");
-                vm.pp = Value::Nil;
+                vm.pp = Value::Null;
                 vm.sp -= 1;
             }
             other => {
                 vm.rr = other;
-                vm.pp = Value::Nil;
+                vm.pp = Value::Null;
                 vm.sp -= 1;
             }
         }

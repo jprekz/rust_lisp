@@ -32,11 +32,11 @@ pub fn parse(token_stream: &mut TokenStream) -> Value {
         }
         Some(Token::RPER) => {
             token_stream.next();
-            return Value::Nil;
+            return Value::Null;
         }
         _ => (),
     }
-    let mut tail = RefValue::new(Value::Nil);
+    let mut tail = RefValue::new(Value::Null);
     let head = Value::Cons(RefValue::new(parse(token_stream)), tail.clone());
     while let Some(peek) = token_stream.peek().map(|c| c.clone()) {
         match peek {
@@ -56,7 +56,7 @@ pub fn parse(token_stream: &mut TokenStream) -> Value {
             }
             _ => {
                 let value = parse(token_stream);
-                let next_tail = RefValue::new(Value::Nil);
+                let next_tail = RefValue::new(Value::Null);
                 tail.replace(Value::Cons(RefValue::new(value), next_tail.clone()));
                 tail = next_tail;
             }

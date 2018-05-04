@@ -62,7 +62,7 @@ pub static SYNTAX: &'static [(&'static str, fn(&mut VM))] = &[
     ("print-env", |vm| {
         vm.env.print();
         vm.stack.pop();
-        vm.rr = Value::Nil;
+        vm.rr = Value::Null;
         vm.sp -= 1;
     })
 ];

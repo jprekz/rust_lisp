@@ -7,7 +7,7 @@ use std::convert::TryFrom;
 
 #[derive(Clone)]
 pub enum Value {
-    Nil,
+    Null,
     Cons(RefValue, RefValue),
     Quoted(RefValue),
     Bool(bool),
@@ -22,7 +22,7 @@ impl TryFrom<Value> for () {
     type Error = String;
     fn try_from(value: Value) -> Result<(), String> {
         match value {
-            Value::Nil => Ok(()),
+            Value::Null => Ok(()),
             _ => Err("downcast error".to_string()),
         }
     }
@@ -30,7 +30,7 @@ impl TryFrom<Value> for () {
 impl Value {
     pub fn try_into_nil(self) -> Option<()> {
         match self {
-            Value::Nil => Some(()),
+            Value::Null => Some(()),
             _ => None,
         }
     }
@@ -63,7 +63,7 @@ impl Value {
 impl ::std::fmt::Debug for Value {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            Value::Nil => write!(f, "()"),
+            Value::Null => write!(f, "()"),
             Value::Cons(car, cdr) => {
                 write!(f, "({:?}", car.0.borrow())?;
                 fn fmt_l(next: RefValue, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
@@ -72,7 +72,7 @@ impl ::std::fmt::Debug for Value {
                             write!(f, " {:?}", car.0.borrow())?;
                             fmt_l(cdr.clone(), f)
                         }
-                        Value::Nil => write!(f, ")"),
+                        Value::Null => write!(f, ")"),
                         ref other => write!(f, " . {:?})", other),
                     }
                 }
@@ -94,13 +94,13 @@ impl Iterator for Value {
     type Item = Value;
     fn next(&mut self) -> Option<Value> {
         match self.clone() {
-            Value::Nil => None,
+            Value::Null => None,
             Value::Cons(car, cdr) => {
                 *self = cdr.to_value();
                 Some(car.to_value())
             }
             other => {
-                *self = Value::Nil;
+                *self = Value::Null;
                 Some(other)
             }
         }
@@ -110,7 +110,7 @@ impl Iterator for Value {
 impl PartialEq for Value {
     fn eq(&self, other: &Value) -> bool {
         match (self, other) {
-            (Value::Nil, Value::Nil) => true,
+            (Value::Null, Value::Null) => true,
             (Value::Cons(car1, cdr1), Value::Cons(car2, cdr2)) => {
                 car1 == car2 && cdr1 == cdr2
             }
