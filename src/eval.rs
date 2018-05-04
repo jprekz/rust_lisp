@@ -8,7 +8,10 @@ pub enum StackData {
     SP(i64),
     Env(Env),
 }
+
 pub type Stack = Vec<StackData>;
+
+#[derive(Clone)]
 pub struct VM {
     pub pp: Value,
     pub sp: i64,
@@ -26,7 +29,7 @@ pub fn eval(val: Value, env: Env) -> Value {
         env: env,
     };
     loop {
-        //println!("rr:{:?} sp:{} pp:{:?} {:?}", vm.rr, vm.sp, vm.pp, vm.stack);
+        // println!("\nenv:{:?}\tsp:{}\tpp:{:?}\trr:{:?}\nstack: {:?}", vm.env, vm.sp, vm.pp, vm.rr, vm.stack);
         match vm.pp.clone() {
             Value::Nil => {
                 if vm.sp == vm.stack.len() as i64 {
@@ -50,13 +53,14 @@ pub fn eval(val: Value, env: Env) -> Value {
                         }
                         while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
                         vm.pp = closure_body.to_value();
-                        vm.env = extended_env;
                         if vm.sp > 0 {
                             if let StackData::Env(_) = vm.stack[vm.sp as usize - 1] {
+                                vm.env = extended_env;
                                 continue;
                             }
                         }
                         vm.stack.push(StackData::Env(vm.env.clone()));
+                        vm.env = extended_env;
                         vm.sp += 1;
                     }
                     StackData::Val(Value::Syntax(_name, f)) => {
@@ -68,6 +72,16 @@ pub fn eval(val: Value, env: Env) -> Value {
                         }));
                         while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
                         vm.sp -= 1;
+                    }
+                    StackData::Val(Value::Cont(box_vm)) => {
+                        if let StackData::Val(arg) = vm.stack.pop().unwrap() {
+                            vm = *box_vm;
+                            vm.rr = arg;
+                            while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+                            vm.sp -= 1;
+                        } else {
+                            panic!();
+                        }
                     }
                     StackData::Val(_) => {
                         panic!("invalid application");

@@ -51,6 +51,10 @@ impl Env {
         }
     }
 
+    pub fn print(&self) {
+        println!("{:?}", self.0.borrow().inner);
+    }
+
     fn new(env_inner: EnvCell) -> Env {
         Env(Rc::new(RefCell::new(env_inner)))
     }
@@ -70,6 +74,9 @@ impl PartialEq for Env {
 
 impl ::std::fmt::Debug for Env {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-            write!(f, "<Env>")
+        let ptr = Rc::into_raw(self.0.clone());
+        let ret = write!(f, "<Env {}>", ptr as usize);
+        let _ = unsafe { Rc::from_raw(ptr) };
+        ret
     }
 }

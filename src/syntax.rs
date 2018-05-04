@@ -49,6 +49,22 @@ pub static SYNTAX: &'static [(&'static str, fn(&mut VM))] = &[
             while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
         })));
     }),
+    ("call/cc", |vm| {
+        while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+        vm.stack.push(StackData::Val(Value::Syntax("call/cc2", |vm| {
+            let cont = Value::Cont(Box::new(vm.clone()));
+            let lambda = vm.stack.pop().unwrap();
+            vm.stack.pop();
+            vm.stack.push(lambda);
+            vm.stack.push(StackData::Val(cont));
+        })));
+    }),
+    ("print-env", |vm| {
+        vm.env.print();
+        vm.stack.pop();
+        vm.rr = Value::Nil;
+        vm.sp -= 1;
+    })
 ];
 
 pub static SUBR: &'static [(&'static str, fn(&mut Iterator<Item = Value>) -> Value)] = &[

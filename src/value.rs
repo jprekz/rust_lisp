@@ -16,6 +16,7 @@ pub enum Value {
     Syntax(&'static str, SyntaxFn),
     Closure(RefValue, RefValue, Env),
     Subr(&'static str, SubrFn),
+    Cont(Box<VM>),
 }
 impl TryFrom<Value> for () {
     type Error = String;
@@ -84,6 +85,7 @@ impl ::std::fmt::Debug for Value {
             Value::Syntax(name, _) => write!(f, "#<syntax {}>", name),
             Value::Closure(a, b, _) => write!(f, "#<closure {:?} {:?}>", a, b),
             Value::Subr(name, _) => write!(f, "#<subr {}>", name),
+            Value::Cont(_vm) => write!(f, "#<subr continuation>"),
         }
     }
 }
