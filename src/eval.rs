@@ -116,11 +116,6 @@ pub fn eval(val: Value, env: Env) -> Value {
                 vm.sp = vm.stack.len() as i64;
                 vm.pp = car.to_value();
             }
-            Value::Quoted(value) => {
-                vm.rr = value.to_value();
-                vm.pp = Value::Null;
-                vm.sp -= 1;
-            }
             Value::Ident(ident) => {
                 vm.rr = vm.env.get(ident.clone()).expect("unbound variable");
                 vm.pp = Value::Null;

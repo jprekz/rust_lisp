@@ -30,7 +30,9 @@ pub static SYNTAX: &'static [(&'static str, fn(&mut VM))] = &[
         _ => panic!("syntax error"),
     }),
     ("quote", |vm| {
-        vm.pp.next().unwrap();
+        vm.rr = vm.pp.next().unwrap();
+        while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+        vm.sp -= 1;
     }),
     ("lambda", |vm| {
         let args = vm.pp.next().unwrap();

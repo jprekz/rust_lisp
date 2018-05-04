@@ -9,7 +9,6 @@ use std::convert::TryFrom;
 pub enum Value {
     Null,
     Cons(RefValue, RefValue),
-    Quoted(RefValue),
     Bool(bool),
     Num(f64),
     Ident(String),
@@ -78,7 +77,6 @@ impl ::std::fmt::Debug for Value {
                 }
                 fmt_l(cdr.clone(), f)
             },
-            Value::Quoted(value) => write!(f, "'{:?}", value.0.borrow()),
             Value::Bool(b) => write!(f, "{}", if *b { "#t" } else { "#f" }),
             Value::Num(num) => write!(f, "{}", num),
             Value::Ident(ident) => write!(f, "{}", ident),
@@ -113,9 +111,6 @@ impl PartialEq for Value {
             (Value::Null, Value::Null) => true,
             (Value::Cons(car1, cdr1), Value::Cons(car2, cdr2)) => {
                 car1 == car2 && cdr1 == cdr2
-            }
-            (Value::Quoted(v1), Value::Quoted(v2)) => {
-                v1 == v2
             }
             (Value::Bool(b1), Value::Bool(b2)) => {
                 b1 == b2

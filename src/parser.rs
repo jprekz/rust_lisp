@@ -5,7 +5,13 @@ pub fn parse(token_stream: &mut TokenStream) -> Value {
     match token_stream.next() {
         Some(Token::LPER) => (),
         Some(Token::QUOTE) => {
-            return Value::Quoted(RefValue::new(parse(token_stream)));
+            return Value::Cons(
+                RefValue::new(Value::Ident("quote".to_string())),
+                RefValue::new(Value::Cons(
+                    RefValue::new(parse(token_stream)),
+                    RefValue::new(Value::Null),
+                )),
+            );
         }
         Some(Token::BOOL(b)) => {
             return Value::Bool(b);
@@ -19,17 +25,6 @@ pub fn parse(token_stream: &mut TokenStream) -> Value {
         _ => panic!("syntax error"),
     }
     match token_stream.peek().map(|c| c.clone()) {
-        Some(Token::IDENT(ident)) => {
-            if ident.eq("quote") {
-                token_stream.next();
-                let value = Value::Quoted(RefValue::new(parse(token_stream)));
-                if let Some(Token::RPER) = token_stream.next() {
-                    return value;
-                } else {
-                    panic!("syntax error");
-                }
-            }
-        }
         Some(Token::RPER) => {
             token_stream.next();
             return Value::Null;
