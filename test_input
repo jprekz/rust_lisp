@@ -1,0 +1,11 @@
+(define one 1)
+one
+(+ 1 1)
+(+ 1.8 (/ 12 10))
+(* 2 (call/cc (lambda (k) (+ one one))))
+(* 3 (call/cc (lambda (k)  (+ one (k (/ 5 3))))))
+(define (fact n)
+  (if (= n 0)
+    1
+    (* n (fact (- n 1)))))
+(fact 3)
