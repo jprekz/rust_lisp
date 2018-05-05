@@ -4,16 +4,20 @@ use super::value::{RefValue, Value};
 pub static SYNTAX: &'static [(&'static str, fn(&mut VM))] = &[
     ("define", |vm| match vm.pp.next().unwrap() {
         Value::Ident(ident) => {
-            while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+            vm.stack.truncate(vm.sp as usize);
             vm.stack.push(StackData::Val(Value::Syntax("define2", |vm| {
                 if let StackData::Val(value) = vm.stack.pop().unwrap() {
                     if let StackData::Val(Value::Ident(ident)) = vm.stack.pop().unwrap() {
                         vm.env.insert(ident, value);
                         vm.rr = Value::Bool(true);
-                        while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+                        vm.stack.truncate(vm.sp as usize);
                         vm.sp -= 1;
-                    } else { panic!() }
-                } else { panic!() }
+                    } else {
+                        panic!()
+                    }
+                } else {
+                    panic!()
+                }
             })));
             vm.stack.push(StackData::Val(Value::Ident(ident)));
         }
@@ -24,49 +28,50 @@ pub static SYNTAX: &'static [(&'static str, fn(&mut VM))] = &[
             let value = Value::Closure(defun_args, RefValue::new(body), vm.env.clone());
             vm.env.insert(defun_ident, value);
             vm.rr = Value::Bool(true);
-            while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+            vm.stack.truncate(vm.sp as usize);
             vm.sp -= 1;
         }
         _ => panic!("syntax error"),
     }),
     ("quote", |vm| {
         vm.rr = vm.pp.next().unwrap();
-        while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+        vm.stack.truncate(vm.sp as usize);
         vm.sp -= 1;
     }),
     ("lambda", |vm| {
         let args = vm.pp.next().unwrap();
         let body = vm.pp.next().unwrap();
         vm.rr = Value::Closure(RefValue::new(args), RefValue::new(body), vm.env.clone());
-        while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+        vm.stack.truncate(vm.sp as usize);
         vm.sp -= 1;
     }),
     ("if", |vm| {
-        while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+        vm.stack.truncate(vm.sp as usize);
         vm.stack.push(StackData::Val(Value::Syntax("if2", |vm| {
             if let StackData::Val(Value::Bool(false)) = vm.stack.pop().unwrap() {
                 vm.pp.next();
             }
             vm.pp = vm.pp.next().unwrap();
-            while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
+            vm.stack.truncate(vm.sp as usize);
         })));
     }),
     ("call/cc", |vm| {
-        while vm.stack.len() > vm.sp as usize { vm.stack.pop(); }
-        vm.stack.push(StackData::Val(Value::Syntax("call/cc2", |vm| {
-            let cont = Value::Cont(Box::new(vm.clone()));
-            let lambda = vm.stack.pop().unwrap();
-            vm.stack.pop();
-            vm.stack.push(lambda);
-            vm.stack.push(StackData::Val(cont));
-        })));
+        vm.stack.truncate(vm.sp as usize);
+        vm.stack
+            .push(StackData::Val(Value::Syntax("call/cc2", |vm| {
+                let cont = Value::Cont(Box::new(vm.clone()));
+                let lambda = vm.stack.pop().unwrap();
+                vm.stack.pop();
+                vm.stack.push(lambda);
+                vm.stack.push(StackData::Val(cont));
+            })));
     }),
     ("print-env", |vm| {
         vm.env.print();
         vm.stack.pop();
         vm.rr = Value::Null;
         vm.sp -= 1;
-    })
+    }),
 ];
 
 pub static SUBR: &'static [(&'static str, fn(&mut Iterator<Item = Value>) -> Value)] = &[

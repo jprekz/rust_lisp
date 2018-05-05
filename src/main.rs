@@ -7,10 +7,10 @@ mod parser;
 mod syntax;
 mod value;
 
-use parser::parse;
 use env::Env;
 use eval::eval;
 use lexer::Lexer;
+use parser::parse;
 
 use std::io::{stdin, stdout, Read, Write};
 
@@ -23,5 +23,8 @@ fn main() {
         stdout().flush().unwrap();
         println!("{:?}", eval(parse(&mut lexer), env.clone()));
         println!("");
+        if let None = lexer.peek() {
+            break;
+        }
     }
 }

@@ -1,6 +1,6 @@
 use std::iter::{Iterator, Peekable};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Token {
     LPER,
     RPER,
@@ -42,7 +42,7 @@ impl<C: Iterator<Item = char>> Iterator for Lexer<C> {
             if is_identifier_char(ch) {
                 buf.push(ch);
             }
-            let peek = self.reader.peek().map(|o| o.clone());
+            let peek = self.reader.peek().cloned();
             match (ch, peek) {
                 ('(', _) => return Some(Token::LPER),
                 (')', _) => return Some(Token::RPER),

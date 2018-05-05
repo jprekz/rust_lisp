@@ -1,5 +1,5 @@
-use super::syntax::SYNTAX;
 use super::syntax::SUBR;
+use super::syntax::SYNTAX;
 use super::value::Value;
 
 use std::cell::RefCell;

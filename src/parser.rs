@@ -1,10 +1,23 @@
 use super::lexer::{Token, TokenStream};
-use super::value::{Value, RefValue};
+use super::value::{RefValue, Value};
 
 pub fn parse(token_stream: &mut TokenStream) -> Value {
-    match token_stream.next() {
-        Some(Token::LPER) => (),
-        Some(Token::QUOTE) => {
+    match (token_stream.next(), token_stream.peek().cloned()) {
+        (Some(Token::LPER), Some(Token::RPER)) => {
+            token_stream.next();
+            return Value::Null;
+        }
+        (Some(Token::LPER), _) => (),
+        (Some(Token::BOOL(b)), _) => {
+            return Value::Bool(b);
+        }
+        (Some(Token::IDENT(ident)), _) => {
+            return Value::Ident(ident);
+        }
+        (Some(Token::NUM(num)), _) => {
+            return Value::Num(num);
+        }
+        (Some(Token::QUOTE), _) => {
             return Value::Cons(
                 RefValue::new(Value::Ident("quote".to_string())),
                 RefValue::new(Value::Cons(
@@ -13,27 +26,11 @@ pub fn parse(token_stream: &mut TokenStream) -> Value {
                 )),
             );
         }
-        Some(Token::BOOL(b)) => {
-            return Value::Bool(b);
-        }
-        Some(Token::IDENT(ident)) => {
-            return Value::Ident(ident);
-        }
-        Some(Token::NUM(num)) => {
-            return Value::Num(num);
-        }
         _ => panic!("syntax error"),
-    }
-    match token_stream.peek().map(|c| c.clone()) {
-        Some(Token::RPER) => {
-            token_stream.next();
-            return Value::Null;
-        }
-        _ => (),
     }
     let mut tail = RefValue::new(Value::Null);
     let head = Value::Cons(RefValue::new(parse(token_stream)), tail.clone());
-    while let Some(peek) = token_stream.peek().map(|c| c.clone()) {
+    while let Some(peek) = token_stream.peek().cloned() {
         match peek {
             Token::RPER => {
                 token_stream.next();

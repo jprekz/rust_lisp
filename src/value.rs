@@ -3,7 +3,6 @@ use super::eval::VM;
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::convert::TryFrom;
 
 #[derive(Clone)]
 pub enum Value {
@@ -16,15 +15,6 @@ pub enum Value {
     Closure(RefValue, RefValue, Env),
     Subr(&'static str, SubrFn),
     Cont(Box<VM>),
-}
-impl TryFrom<Value> for () {
-    type Error = String;
-    fn try_from(value: Value) -> Result<(), String> {
-        match value {
-            Value::Null => Ok(()),
-            _ => Err("downcast error".to_string()),
-        }
-    }
 }
 impl Value {
     pub fn try_into_nil(self) -> Option<()> {
@@ -76,7 +66,7 @@ impl ::std::fmt::Debug for Value {
                     }
                 }
                 fmt_l(cdr.clone(), f)
-            },
+            }
             Value::Bool(b) => write!(f, "{}", if *b { "#t" } else { "#f" }),
             Value::Num(num) => write!(f, "{}", num),
             Value::Ident(ident) => write!(f, "{}", ident),
@@ -109,27 +99,15 @@ impl PartialEq for Value {
     fn eq(&self, other: &Value) -> bool {
         match (self, other) {
             (Value::Null, Value::Null) => true,
-            (Value::Cons(car1, cdr1), Value::Cons(car2, cdr2)) => {
-                car1 == car2 && cdr1 == cdr2
-            }
-            (Value::Bool(b1), Value::Bool(b2)) => {
-                b1 == b2
-            }
-            (Value::Num(n1), Value::Num(n2)) => {
-                n1 == n2
-            }
-            (Value::Ident(i1), Value::Ident(i2)) => {
-                i1 == i2
-            }
-            (Value::Syntax(n1, f1), Value::Syntax(n2, f2)) => {
-                n1 == n2 && ::std::ptr::eq(f1, f2)
-            }
-            (Value::Closure(a1, b1, e1),Value::Closure(a2, b2, e2)) => {
+            (Value::Cons(car1, cdr1), Value::Cons(car2, cdr2)) => car1 == car2 && cdr1 == cdr2,
+            (Value::Bool(b1), Value::Bool(b2)) => b1 == b2,
+            (Value::Num(n1), Value::Num(n2)) => n1 == n2,
+            (Value::Ident(i1), Value::Ident(i2)) => i1 == i2,
+            (Value::Syntax(n1, f1), Value::Syntax(n2, f2)) => n1 == n2 && ::std::ptr::eq(f1, f2),
+            (Value::Closure(a1, b1, e1), Value::Closure(a2, b2, e2)) => {
                 a1 == a2 && b1 == b2 && e1 == e2
             }
-            (Value::Subr(n1, f1), Value::Subr(n2, f2)) => {
-                n1 == n2 && ::std::ptr::eq(f1, f2)
-            }
+            (Value::Subr(n1, f1), Value::Subr(n2, f2)) => n1 == n2 && ::std::ptr::eq(f1, f2),
             _ => false,
         }
     }
@@ -162,4 +140,4 @@ impl ::std::fmt::Debug for RefValue {
 }
 
 pub type SyntaxFn = fn(&mut VM);
-pub type SubrFn = fn(&mut Iterator<Item=Value>) -> Value;
+pub type SubrFn = fn(&mut Iterator<Item = Value>) -> Value;
