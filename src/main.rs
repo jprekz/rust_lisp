@@ -33,7 +33,7 @@ where T: Iterator<Item=char> + 'static {
         print!("> ");
         stdout().flush().unwrap();
         println!("{:?}", eval(parse(&mut lexer), env.clone()));
-        println!("{:?}", lexer.peek());
+        println!("");
         if let None = lexer.peek() {
             break;
         }

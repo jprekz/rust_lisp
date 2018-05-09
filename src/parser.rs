@@ -2,22 +2,23 @@ use super::lexer::{Token, TokenStream};
 use super::value::{RefValue, Value};
 
 pub fn parse(token_stream: &mut TokenStream) -> Value {
-    match (token_stream.next(), token_stream.peek().cloned()) {
-        (Some(Token::LPER), Some(Token::RPER)) => {
-            token_stream.next();
-            return Value::Null;
+    match token_stream.next() {
+        Some(Token::LPER) => {
+            if let Some(Token::RPER) = token_stream.peek().cloned() {
+                token_stream.next();
+                return Value::Null;
+            }
         }
-        (Some(Token::LPER), _) => (),
-        (Some(Token::BOOL(b)), _) => {
+        Some(Token::BOOL(b)) => {
             return Value::Bool(b);
         }
-        (Some(Token::IDENT(ident)), _) => {
+        Some(Token::IDENT(ident)) => {
             return Value::Ident(ident);
         }
-        (Some(Token::NUM(num)), _) => {
+        Some(Token::NUM(num)) => {
             return Value::Num(num);
         }
-        (Some(Token::QUOTE), _) => {
+        Some(Token::QUOTE) => {
             return Value::Cons(
                 RefValue::new(Value::Ident("quote".to_string())),
                 RefValue::new(Value::Cons(
