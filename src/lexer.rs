@@ -1,4 +1,4 @@
-use std::iter::{Iterator, Peekable};
+use std::iter::Peekable;
 
 #[derive(Debug, Clone)]
 pub enum Token {
@@ -13,17 +13,6 @@ pub enum Token {
     NUM(f64),
 }
 
-pub trait PeekableIterator: Iterator {
-    fn peek(&mut self) -> Option<&Self::Item>;
-}
-impl<T: Iterator> PeekableIterator for Peekable<T> {
-    fn peek(&mut self) -> Option<&Self::Item> {
-        self.peek()
-    }
-}
-
-pub type TokenStream = PeekableIterator<Item = Token>;
-
 pub struct Lexer<C: Iterator<Item = char>> {
     reader: Peekable<C>,
 }
@@ -35,8 +24,8 @@ impl<C: Iterator<Item = char>> Lexer<C> {
     }
 }
 impl<C: Iterator<Item = char>> Iterator for Lexer<C> {
-    type Item = Token;
-    fn next(&mut self) -> Option<Token> {
+    type Item = Result<Token, String>;
+    fn next(&mut self) -> Option<Self::Item> {
         let mut buf = String::new();
         while let Some(ch) = self.reader.next() {
             if is_identifier_char(ch) {
@@ -44,17 +33,17 @@ impl<C: Iterator<Item = char>> Iterator for Lexer<C> {
             }
             let peek = self.reader.peek().cloned();
             match (ch, peek) {
-                ('(', _) => return Some(Token::LPER),
-                (')', _) => return Some(Token::RPER),
-                ('{', _) => return Some(Token::LBRACE),
-                ('}', _) => return Some(Token::RBRACE),
-                ('\'', _) => return Some(Token::QUOTE),
-                ('.', None) => return Some(Token::DOT),
-                ('.', Some(peek)) if !is_identifier_char(peek) => return Some(Token::DOT),
+                ('(', _) => return Some(Ok(Token::LPER)),
+                (')', _) => return Some(Ok(Token::RPER)),
+                ('{', _) => return Some(Ok(Token::LBRACE)),
+                ('}', _) => return Some(Ok(Token::RBRACE)),
+                ('\'', _) => return Some(Ok(Token::QUOTE)),
+                ('.', None) => return Some(Ok(Token::DOT)),
+                ('.', Some(peek)) if !is_identifier_char(peek) => return Some(Ok(Token::DOT)),
                 ('#', Some(_)) => match self.reader.next().unwrap() {
-                    't' => return Some(Token::BOOL(true)),
-                    'f' => return Some(Token::BOOL(false)),
-                    _ => panic!("lexer error"),
+                    't' => return Some(Ok(Token::BOOL(true))),
+                    'f' => return Some(Ok(Token::BOOL(false))),
+                    _ => return Some(Err("lexer error".to_string())),
                 },
                 (_, _) if is_identifier_char(ch) => {
                     if let Some(peek) = peek {
@@ -63,9 +52,9 @@ impl<C: Iterator<Item = char>> Iterator for Lexer<C> {
                         }
                     }
                     if let Ok(num) = buf.parse() {
-                        return Some(Token::NUM(num));
+                        return Some(Ok(Token::NUM(num)));
                     } else {
-                        return Some(Token::IDENT(buf));
+                        return Some(Ok(Token::IDENT(buf)));
                     }
                 }
                 _ => (),

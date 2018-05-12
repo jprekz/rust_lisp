@@ -1,4 +1,5 @@
 #![feature(io)]
+#![feature(transpose_result)]
 
 mod env;
 mod eval;
@@ -32,11 +33,15 @@ where T: Iterator<Item=char> + 'static {
     loop {
         print!("> ");
         stdout().flush().unwrap();
-        println!("{:?}", eval(parse(&mut lexer), env.clone()));
+        let parsed = match parse(&mut lexer) {
+            Ok(v) => v,
+            Err(e) => {
+                println!("\nError: {}", e);
+                break;
+            }
+        };
+        println!("{:?}", eval(parsed, env.clone()));
         println!("");
-        if let None = lexer.peek() {
-            break;
-        }
     }
 }
 
