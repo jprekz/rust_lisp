@@ -19,10 +19,15 @@ use std::fs::File;
 fn main() {
     if let Some(arg) = std::env::args().nth(1) {
         let file = File::open(arg).unwrap();
-        repr(file.chars().filter_map(|r| r.ok()));
+        repr(bytes_to_chars(file));
     } else {
-        repr(stdin().chars().filter_map(|r| r.ok()));
+        repr(bytes_to_chars(stdin()));
     }
+}
+
+// FIXME: deprecated
+fn bytes_to_chars(bytes: impl Read) -> impl Iterator<Item=char> {
+    bytes.chars().filter_map(|r| r.ok())
 }
 
 fn repr<T>(input: T)
