@@ -117,4 +117,10 @@ pub static SUBR: &'static [(&'static str, fn(&mut Iterator<Item = Value>) -> Val
         }
         Value::Num(acc)
     }),
+    ("print", |args| {
+        for val in args {
+            println!("{:?}", val);
+        }
+        Value::Bool(true)
+    }),
 ];
