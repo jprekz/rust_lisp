@@ -122,7 +122,7 @@ pub fn eval(val: Value, env: Env) -> Value {
                 vm.pp = car.to_value();
             }
             Value::Ident(ident) => {
-                vm.rr = vm.env.get(ident.clone()).expect("unbound variable");
+                vm.rr = vm.env.get(ident.clone()).expect("unbound variable").clone();
                 vm.pp = Value::Null;
                 vm.sp -= 1;
             }
