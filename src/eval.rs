@@ -1,5 +1,5 @@
-use super::env::Env;
-use super::value::Value;
+use crate::env::Env;
+use crate::value::Value;
 
 #[derive(Clone, Debug)]
 pub enum StackData {
@@ -40,7 +40,7 @@ pub fn eval(val: Value, env: Env) -> Value {
                 }
                 match vm.stack[vm.sp as usize].clone() {
                     StackData::Val(Value::Closure(closure_args, closure_body, closure_env)) => {
-                        let mut extended_env = closure_env.extend();
+                        let extended_env = closure_env.extend();
                         for (i, closure_arg) in closure_args.to_value().enumerate() {
                             let ident = closure_arg.try_into_ident().expect("syntax error");
                             if let StackData::Val(value) = vm.stack[vm.sp as usize + 1 + i].clone()

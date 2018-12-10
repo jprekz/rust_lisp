@@ -1,6 +1,6 @@
-use super::syntax::SUBR;
-use super::syntax::SYNTAX;
-use super::value::Value;
+use crate::syntax::SUBR;
+use crate::syntax::SYNTAX;
+use crate::value::Value;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -55,7 +55,7 @@ impl<T: Clone> PartialEq for ChainMap<T> {
 }
 
 impl<T: Clone> ::std::fmt::Debug for ChainMap<T> {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         let ptr = Rc::into_raw(self.0.clone());
         let ret = write!(f, "<Env {}>", ptr as usize);
         let _ = unsafe { Rc::from_raw(ptr) };

@@ -7,10 +7,10 @@ mod parser;
 mod syntax;
 mod value;
 
-use env::Env;
-use eval::eval;
-use lexer::Lexer;
-use parser::parse;
+use crate::env::Env;
+use crate::eval::eval;
+use crate::lexer::Lexer;
+use crate::parser::parse;
 
 use std::fs::File;
 use std::io::{stdin, stdout, BufRead, BufReader, Write};

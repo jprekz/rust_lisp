@@ -1,5 +1,5 @@
-use super::env::Env;
-use super::eval::VM;
+use crate::env::Env;
+use crate::eval::VM;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -50,12 +50,12 @@ impl Value {
 }
 
 impl ::std::fmt::Debug for Value {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         match self {
             Value::Null => write!(f, "()"),
             Value::Cons(car, cdr) => {
                 write!(f, "({:?}", car.0.borrow())?;
-                fn fmt_l(next: RefValue, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+                fn fmt_l(next: RefValue, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                     match *next.0.borrow() {
                         Value::Cons(ref car, ref cdr) => {
                             write!(f, " {:?}", car.0.borrow())?;
@@ -134,10 +134,10 @@ impl PartialEq for RefValue {
     }
 }
 impl ::std::fmt::Debug for RefValue {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         write!(f, "{:?}", self.0.borrow())
     }
 }
 
 pub type SyntaxFn = fn(&mut VM);
-pub type SubrFn = fn(&mut Iterator<Item = Value>) -> Value;
+pub type SubrFn = fn(&mut dyn Iterator<Item = Value>) -> Value;

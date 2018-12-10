@@ -1,5 +1,5 @@
-use super::lexer::{Token};
-use super::value::{RefValue, Value};
+use crate::lexer::Token;
+use crate::value::{RefValue, Value};
 
 use std::iter::Peekable;
 pub fn parse<T>(token_stream: &mut Peekable<T>) -> Result<Value, String>

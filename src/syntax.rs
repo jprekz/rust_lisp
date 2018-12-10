@@ -1,7 +1,7 @@
-use super::eval::{StackData, VM};
-use super::value::{RefValue, Value};
+use crate::eval::{StackData, VM};
+use crate::value::{RefValue, Value};
 
-pub static SYNTAX: &'static [(&'static str, fn(&mut VM))] = &[
+pub static SYNTAX: &[(&str, fn(&mut VM))] = &[
     ("define", |vm| match vm.pp.next().unwrap() {
         Value::Ident(ident) => {
             vm.stack.truncate(vm.sp as usize);
@@ -74,7 +74,7 @@ pub static SYNTAX: &'static [(&'static str, fn(&mut VM))] = &[
     }),
 ];
 
-pub static SUBR: &'static [(&'static str, fn(&mut Iterator<Item = Value>) -> Value)] = &[
+pub static SUBR: &[(&str, fn(&mut dyn Iterator<Item = Value>) -> Value)] = &[
     ("cons", |args| {
         let car = args.next().unwrap();
         let cdr = args.next().unwrap();
