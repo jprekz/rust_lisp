@@ -1,5 +1,3 @@
-#![feature(transpose_result)]
-
 mod env;
 mod eval;
 mod lexer;

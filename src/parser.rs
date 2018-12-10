@@ -7,40 +7,48 @@ pub fn parse<T>(token_stream: &mut Peekable<T>) -> Result<Value, String>
 where
     T: Iterator<Item = Result<Token, String>>,
 {
-    match token_stream.next().transpose()? {
-        Some(Token::LPER) => {
-            if let Some(Token::RPER) = token_stream.peek().cloned().transpose()? {
+    let first_token = match token_stream.next() {
+        Some(item) => item?,
+        None => return Err("unexpected end of input".to_string()),
+    };
+
+    let value = match first_token {
+        Token::LPER => {
+            if let Some(Ok(Token::RPER)) = token_stream.peek().cloned() {
                 token_stream.next();
-                return Ok(Value::Null);
+                Value::Null
+            } else {
+                parse_list(token_stream)?
             }
         }
-        Some(Token::BOOL(b)) => {
-            return Ok(Value::Bool(b));
-        }
-        Some(Token::IDENT(ident)) => {
-            return Ok(Value::Ident(ident));
-        }
-        Some(Token::NUM(num)) => {
-            return Ok(Value::Num(num));
-        }
-        Some(Token::QUOTE) => {
+        Token::BOOL(b) => Value::Bool(b),
+        Token::IDENT(ident) => Value::Ident(ident),
+        Token::NUM(num) => Value::Num(num),
+        Token::QUOTE => {
             let quoted = parse(token_stream)?;
-            return Ok(Value::Cons(
+            Value::Cons(
                 RefValue::new(Value::Ident("quote".to_string())),
                 RefValue::new(Value::Cons(
                     RefValue::new(quoted),
                     RefValue::new(Value::Null),
                 )),
-            ));
+            )
         }
-        None => return Err("unexpected end of input".to_string()),
         _ => return Err("syntax error".to_string()),
-    }
+    };
+
+    Ok(value)
+}
+
+fn parse_list<T>(token_stream: &mut Peekable<T>) -> Result<Value, String>
+where
+    T: Iterator<Item = Result<Token, String>>,
+{
     let mut tail = RefValue::new(Value::Null);
     let head = parse(token_stream)?;
     let head = Value::Cons(RefValue::new(head), tail.clone());
-    while let Some(peek) = token_stream.peek().cloned().transpose()? {
-        match peek {
+    while let Some(peek) = token_stream.peek().cloned() {
+        match peek? {
             Token::RPER => {
                 token_stream.next();
                 return Ok(head);
@@ -49,10 +57,12 @@ where
                 token_stream.next();
                 let value = parse(token_stream)?;
                 tail.replace(value);
-                if let Some(Token::RPER) = token_stream.next().transpose()? {
-                    return Ok(head);
+                if let Some(next) = token_stream.next() {
+                    if let Token::RPER = next? {
+                        return Ok(head);
+                    }
                 } else {
-                    panic!("syntax error");
+                    return Err("syntax error".to_string());
                 }
             }
             _ => {
