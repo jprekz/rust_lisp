@@ -1,4 +1,3 @@
-#![feature(io)]
 #![feature(transpose_result)]
 
 mod env;
@@ -13,25 +12,26 @@ use eval::eval;
 use lexer::Lexer;
 use parser::parse;
 
-use std::io::{stdin, stdout, Read, Write};
 use std::fs::File;
+use std::io::{stdin, stdout, BufRead, BufReader, Write};
 
 fn main() {
     if let Some(arg) = std::env::args().nth(1) {
         let file = File::open(arg).unwrap();
-        run(bytes_to_chars(file));
+        run(buf_reader_to_chars(BufReader::new(file)));
     } else {
-        repr(bytes_to_chars(stdin()));
+        repr();
     }
 }
 
-// FIXME: deprecated
-fn bytes_to_chars(bytes: impl Read) -> impl Iterator<Item=char> {
-    bytes.chars().filter_map(|r| r.ok())
+fn buf_reader_to_chars(buf_reader: impl BufRead) -> impl Iterator<Item = char> {
+    buf_reader
+        .lines()
+        .map(|s| -> Vec<char> { s.unwrap().chars().collect() })
+        .flatten()
 }
 
-fn run<T>(input: T)
-where T: Iterator<Item=char> + 'static {
+fn run(input: impl Iterator<Item = char>) {
     let lexer = Lexer::new(input);
     let mut lexer = lexer.peekable();
     let env = Env::new_default();
@@ -50,9 +50,35 @@ where T: Iterator<Item=char> + 'static {
     }
 }
 
-fn repr<T>(input: T)
-where T: Iterator<Item=char> + 'static {
-    let lexer = Lexer::new(input);
+struct StdinIter {
+    buf: Vec<char>,
+}
+impl StdinIter {
+    fn new() -> StdinIter {
+        StdinIter {
+            buf: Vec::new(),
+        }
+    }
+}
+impl Iterator for StdinIter {
+    type Item = char;
+    fn next(&mut self) -> Option<char> {
+        if self.buf.is_empty() {
+            let mut buf = String::new();
+            let bytes = stdin().read_line(&mut buf).unwrap();
+            if bytes == 0 {
+                return None;
+            }
+            self.buf = buf.chars().collect();
+        }
+        let mut buf = self.buf.split_off(1);
+        std::mem::swap(&mut buf, &mut self.buf);
+        Some(buf[0])
+    }
+}
+
+fn repr() {
+    let lexer = Lexer::new(StdinIter::new());
     let mut lexer = lexer.peekable();
     let env = Env::new_default();
     loop {
