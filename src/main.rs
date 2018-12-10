@@ -55,13 +55,12 @@ struct StdinIter {
 }
 impl StdinIter {
     fn new() -> StdinIter {
-        StdinIter {
-            buf: Vec::new(),
-        }
+        StdinIter { buf: Vec::new() }
     }
 }
 impl Iterator for StdinIter {
     type Item = char;
+
     fn next(&mut self) -> Option<char> {
         if self.buf.is_empty() {
             let mut buf = String::new();

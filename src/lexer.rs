@@ -25,6 +25,7 @@ impl<C: Iterator<Item = char>> Lexer<C> {
 }
 impl<C: Iterator<Item = char>> Iterator for Lexer<C> {
     type Item = Result<Token, String>;
+
     fn next(&mut self) -> Option<Self::Item> {
         let mut buf = String::new();
         while let Some(ch) = self.reader.next() {

@@ -63,7 +63,6 @@ impl<T: Clone> ::std::fmt::Debug for ChainMap<T> {
     }
 }
 
-
 pub type Env = ChainMap<Value>;
 
 impl Env {

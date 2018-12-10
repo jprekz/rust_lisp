@@ -80,6 +80,7 @@ impl ::std::fmt::Debug for Value {
 
 impl Iterator for Value {
     type Item = Value;
+
     fn next(&mut self) -> Option<Value> {
         match self.clone() {
             Value::Null => None,

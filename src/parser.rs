@@ -2,8 +2,11 @@ use crate::lexer::Token;
 use crate::value::{RefValue, Value};
 
 use std::iter::Peekable;
+
 pub fn parse<T>(token_stream: &mut Peekable<T>) -> Result<Value, String>
-where T: Iterator<Item = Result<Token, String>> {
+where
+    T: Iterator<Item = Result<Token, String>>,
+{
     match token_stream.next().transpose()? {
         Some(Token::LPER) => {
             if let Some(Token::RPER) = token_stream.peek().cloned().transpose()? {
