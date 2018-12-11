@@ -26,9 +26,19 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Value {
         stack: Vec::new(),
         env: env,
     };
+
+    if debug_mode {
+        use std::mem::size_of;
+        eprintln!("[DEBUG] size of StackData: {:?}", size_of::<StackData>());
+        eprintln!("[DEBUG] size of Value: {:?}", size_of::<Value>());
+    }
+
     loop {
         if debug_mode {
-            eprintln!("\nenv:{:?}\tsp:{}\tpp:{:?}\trr:{:?}\nstack: {:?}", vm.env, vm.sp, vm.pp, vm.rr, vm.stack);
+            eprintln!(
+                "[DEBUG] env:{:?}\tsp:{}\tpp:{:?}\trr:{:?}\n stack: {:?}",
+                vm.env, vm.sp, vm.pp, vm.rr, vm.stack
+            );
         }
 
         match vm.pp.clone() {
