@@ -1,5 +1,4 @@
-use crate::syntax::SUBR;
-use crate::syntax::SYNTAX;
+use crate::builtin::{SUBR, SYNTAX};
 use crate::value::Value;
 
 use std::cell::RefCell;

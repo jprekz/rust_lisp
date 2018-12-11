@@ -1,8 +1,8 @@
+mod builtin;
 mod env;
 mod eval;
 mod lexer;
 mod parser;
-mod syntax;
 mod value;
 
 use crate::env::Env;
