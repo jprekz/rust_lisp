@@ -18,6 +18,7 @@ pub struct VM {
     pub env: Env,
 }
 
+// TODO: error handling
 pub fn eval(val: Value, env: Env, debug_mode: bool) -> Value {
     let mut vm = VM {
         pp: val,

@@ -74,6 +74,7 @@ pub static SYNTAX: &[(&str, fn(&mut VM))] = &[
     }),
 ];
 
+// TODO: error handling
 pub static SUBR: &[(&str, fn(&mut dyn Iterator<Item = Value>) -> Value)] = &[
     ("cons", |args| {
         let car = args.next().unwrap();

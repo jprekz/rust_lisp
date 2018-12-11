@@ -10,6 +10,7 @@ struct ChainMapCell<T: Clone> {
     outer: Option<ChainMap<T>>,
 }
 
+/// An extended hash map with lookup delegation, like a JavaScript object.
 pub struct ChainMap<T: Clone>(Rc<RefCell<ChainMapCell<T>>>);
 
 impl<T: Clone> ChainMap<T> {
@@ -62,9 +63,11 @@ impl<T: Clone> ::std::fmt::Debug for ChainMap<T> {
     }
 }
 
+/// A hash map contains lisp variables.
 pub type Env = ChainMap<Value>;
 
 impl Env {
+    /// Create a new namespace with builtin variables.
     pub fn new_default() -> Env {
         let env = Env::new(None);
         for &(name, f) in SYNTAX {
@@ -76,6 +79,7 @@ impl Env {
         env
     }
 
+    /// Print variables.
     pub fn print(&self) {
         println!("{:?}", self.0.borrow().inner);
     }
