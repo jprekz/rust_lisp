@@ -18,7 +18,7 @@ pub struct VM {
     pub env: Env,
 }
 
-pub fn eval(val: Value, env: Env) -> Value {
+pub fn eval(val: Value, env: Env, debug_mode: bool) -> Value {
     let mut vm = VM {
         pp: val,
         sp: 0i64,
@@ -27,7 +27,10 @@ pub fn eval(val: Value, env: Env) -> Value {
         env: env,
     };
     loop {
-        // println!("\nenv:{:?}\tsp:{}\tpp:{:?}\trr:{:?}\nstack: {:?}", vm.env, vm.sp, vm.pp, vm.rr, vm.stack);
+        if debug_mode {
+            eprintln!("\nenv:{:?}\tsp:{}\tpp:{:?}\trr:{:?}\nstack: {:?}", vm.env, vm.sp, vm.pp, vm.rr, vm.stack);
+        }
+
         match vm.pp.clone() {
             Value::Null => {
                 if vm.sp == vm.stack.len() as i64 {

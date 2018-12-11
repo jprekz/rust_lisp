@@ -59,7 +59,7 @@ fn main() {
                 break;
             }
         };
-        let value = eval(parsed, env.clone());
+        let value = eval(parsed, env.clone(), opt.debug);
 
         if opt.file.is_none() {
             println!("{:?}", value);
