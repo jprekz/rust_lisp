@@ -3,9 +3,8 @@ use crate::value::Value;
 
 #[derive(Clone, Debug)]
 pub enum StackData {
+    Frame(i64, Value),
     Val(Value),
-    PP(Value),
-    SP(i64),
     Env(Env),
 }
 
@@ -32,6 +31,7 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Value {
         use std::mem::size_of;
         eprintln!("[DEBUG] size of StackData: {:?}", size_of::<StackData>());
         eprintln!("[DEBUG] size of Value: {:?}", size_of::<Value>());
+        eprintln!("[DEBUG] size of Env: {:?}", size_of::<Env>());
     }
 
     loop {
@@ -103,24 +103,16 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Value {
                     StackData::Val(_) => {
                         panic!("invalid application");
                     }
-                    StackData::PP(v) => {
+                    StackData::Frame(sp, pp) => {
+                        vm.pp = pp;
+                        vm.sp = sp;
                         vm.stack.pop();
-                        vm.pp = v;
-                        vm.sp -= 1;
-                        if let Some(StackData::SP(v)) = vm.stack.pop() {
-                            vm.sp = v;
-                            vm.stack.push(StackData::Val(vm.rr.clone()));
-                            if let StackData::Val(Value::Syntax(_name, f)) =
-                                vm.stack[vm.sp as usize].clone()
-                            {
-                                f(&mut vm);
-                            }
-                        } else {
-                            unreachable!();
+                        vm.stack.push(StackData::Val(vm.rr.clone()));
+                        if let StackData::Val(Value::Syntax(_name, f)) =
+                            vm.stack[vm.sp as usize].clone()
+                        {
+                            f(&mut vm);
                         }
-                    }
-                    StackData::SP(_) => {
-                        unreachable!();
                     }
                     StackData::Env(e) => {
                         vm.stack.pop();
@@ -130,8 +122,7 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Value {
                 }
             }
             Value::Cons(car, cdr) => {
-                vm.stack.push(StackData::SP(vm.sp));
-                vm.stack.push(StackData::PP(cdr.to_value()));
+                vm.stack.push(StackData::Frame(vm.sp, cdr.to_value()));
                 vm.sp = vm.stack.len() as i64;
                 vm.pp = car.to_value();
             }
