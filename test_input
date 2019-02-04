@@ -9,3 +9,7 @@
     1
     (* n (fact (- n 1)))))
 (print (fact 3))
+(define (map proc coll)
+  (if (eqv? coll '()) '()
+    (cons (proc (car coll)) (map proc (cdr coll)))))
+(print (map fact '(1 2 3 4)))
