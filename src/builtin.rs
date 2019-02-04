@@ -89,6 +89,15 @@ pub static SUBR: &[(&str, fn(&mut dyn Iterator<Item = Value>) -> Value)] = &[
         let cons = args.next().unwrap().try_into_cons().unwrap();
         cons.1
     }),
+    ("eqv?", |args| {
+        let first = args.next().unwrap();
+        for v in args {
+            if v != first {
+                return Value::Bool(false)
+            }
+        }
+        Value::Bool(true)
+    }),
     ("=", |args| {
         let first = args.next().unwrap();
         for val in args {
