@@ -59,11 +59,16 @@ fn main() {
                 break;
             }
         };
-        let value = eval(parsed, env.clone(), opt.debug);
-
-        if opt.file.is_none() {
-            println!("{:?}", value);
-            println!("");
+        match eval(parsed, env.clone(), opt.debug) {
+            Ok(value) => {
+                if opt.file.is_none() {
+                    println!("{:?}", value);
+                    println!("");
+                }
+            }
+            Err(e) => {
+                println!("ERROR: {:?}", e);
+            }
         }
     }
 }

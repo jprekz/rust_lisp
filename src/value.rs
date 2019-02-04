@@ -17,34 +17,34 @@ pub enum Value {
     Cont(Box<VM>),
 }
 impl Value {
-    pub fn try_into_nil(self) -> Option<()> {
+    pub fn try_into_nil(self) -> Result<(), String> {
         match self {
-            Value::Null => Some(()),
-            _ => None,
+            Value::Null => Ok(()),
+            _ => Err("type mismatch".to_string()),
         }
     }
-    pub fn try_into_cons(self) -> Option<(Value, Value)> {
+    pub fn try_into_cons(self) -> Result<(Value, Value), String> {
         match self {
-            Value::Cons(car, cdr) => Some((car.to_value(), cdr.to_value())),
-            _ => None,
+            Value::Cons(car, cdr) => Ok((car.to_value(), cdr.to_value())),
+            _ => Err("type mismatch".to_string()),
         }
     }
-    pub fn try_into_bool(self) -> Option<bool> {
+    pub fn try_into_bool(self) -> Result<bool, String> {
         match self {
-            Value::Bool(b) => Some(b),
-            _ => None,
+            Value::Bool(b) => Ok(b),
+            _ => Err("type mismatch".to_string()),
         }
     }
-    pub fn try_into_num(self) -> Option<f64> {
+    pub fn try_into_num(self) -> Result<f64, String> {
         match self {
-            Value::Num(a) => Some(a),
-            _ => None,
+            Value::Num(a) => Ok(a),
+            _ => Err("type mismatch".to_string()),
         }
     }
-    pub fn try_into_ident(self) -> Option<String> {
+    pub fn try_into_ident(self) -> Result<String, String> {
         match self {
-            Value::Ident(ident) => Some(ident),
-            _ => None,
+            Value::Ident(ident) => Ok(ident),
+            _ => Err("type mismatch".to_string()),
         }
     }
 }
@@ -140,5 +140,5 @@ impl ::std::fmt::Debug for RefValue {
     }
 }
 
-pub type SyntaxFn = fn(&mut VM);
-pub type SubrFn = fn(&mut dyn Iterator<Item = Value>) -> Value;
+pub type SyntaxFn = fn(&mut VM) -> Result<(), String>;
+pub type SubrFn = fn(&mut dyn Iterator<Item = Value>) -> Result<Value, String>;

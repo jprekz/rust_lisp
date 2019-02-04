@@ -17,8 +17,7 @@ pub struct VM {
     pub env: Env,
 }
 
-// TODO: error handling
-pub fn eval(val: Value, env: Env, debug_mode: bool) -> Value {
+pub fn eval(val: Value, env: Env, debug_mode: bool) -> Result<Value, String> {
     let mut vm = VM {
         pp: val,
         sp: 0i64,
@@ -50,18 +49,18 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Value {
                     continue;
                 }
                 if vm.sp < 0 {
-                    return vm.rr;
+                    return Ok(vm.rr);
                 }
                 match vm.stack[vm.sp as usize].clone() {
                     StackData::Val(Value::Closure(closure_args, closure_body, closure_env)) => {
                         let extended_env = closure_env.extend();
                         for (i, closure_arg) in closure_args.to_value().enumerate() {
-                            let ident = closure_arg.try_into_ident().expect("syntax error");
+                            let ident = closure_arg.try_into_ident().or(Err("syntax error".to_string()))?;
                             if let StackData::Val(value) = vm.stack[vm.sp as usize + 1 + i].clone()
                             {
                                 extended_env.insert(ident, value);
                             } else {
-                                panic!();
+                                return Err("internal error".to_string());
                             }
                         }
                         vm.stack.truncate(vm.sp as usize);
@@ -77,31 +76,33 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Value {
                         vm.sp += 1;
                     }
                     StackData::Val(Value::Syntax(_name, f)) => {
-                        f(&mut vm);
+                        f(&mut vm)?;
                     }
                     StackData::Val(Value::Subr(_name, f)) => {
-                        vm.rr = f(&mut vm.stack[vm.sp as usize + 1..].iter().map(|d| {
+                        let mut args = Vec::new();
+                        for d in &vm.stack[vm.sp as usize + 1..] {
                             if let StackData::Val(v) = d {
-                                v.clone()
+                                args.push(v.clone());
                             } else {
-                                panic!()
+                                return Err("internal error".to_string());
                             }
-                        }));
+                        }
+                        vm.rr = f(&mut args.into_iter())?;
                         vm.stack.truncate(vm.sp as usize);
                         vm.sp -= 1;
                     }
                     StackData::Val(Value::Cont(box_vm)) => {
-                        if let StackData::Val(arg) = vm.stack.pop().unwrap() {
+                        if let Some(StackData::Val(arg)) = vm.stack.pop() {
                             vm = *box_vm;
                             vm.rr = arg;
                             vm.stack.truncate(vm.sp as usize);
                             vm.sp -= 1;
                         } else {
-                            panic!();
+                            return Err("internal error".to_string());
                         }
                     }
                     StackData::Val(_) => {
-                        panic!("invalid application");
+                        return Err("invalid application".to_string());
                     }
                     StackData::Frame(sp, pp) => {
                         vm.pp = pp;
@@ -111,7 +112,7 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Value {
                         if let StackData::Val(Value::Syntax(_name, f)) =
                             vm.stack[vm.sp as usize].clone()
                         {
-                            f(&mut vm);
+                            f(&mut vm)?;
                         }
                     }
                     StackData::Env(e) => {
@@ -127,7 +128,7 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Value {
                 vm.pp = car.to_value();
             }
             Value::Ident(ident) => {
-                vm.rr = vm.env.get(ident.clone()).expect("unbound variable").clone();
+                vm.rr = vm.env.get(ident.clone()).ok_or("unbound variable")?.clone();
                 vm.pp = Value::Null;
                 vm.sp -= 1;
             }
