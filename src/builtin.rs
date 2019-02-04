@@ -81,6 +81,14 @@ pub static SUBR: &[(&str, fn(&mut dyn Iterator<Item = Value>) -> Value)] = &[
         let cdr = args.next().unwrap();
         Value::Cons(RefValue::new(car), RefValue::new(cdr))
     }),
+    ("car", |args| {
+        let cons = args.next().unwrap().try_into_cons().unwrap();
+        cons.0
+    }),
+    ("cdr", |args| {
+        let cons = args.next().unwrap().try_into_cons().unwrap();
+        cons.1
+    }),
     ("=", |args| {
         let first = args.next().unwrap();
         for val in args {
