@@ -1,4 +1,4 @@
-mod builtin;
+mod builtins;
 mod env;
 mod eval;
 mod lexer;
