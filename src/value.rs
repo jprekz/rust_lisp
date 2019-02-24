@@ -11,9 +11,9 @@ pub enum Value {
     Bool(bool),
     Num(f64),
     Ident(String),
-    Syntax(&'static str, SyntaxFn),
+    Syntax(&'static str, BuiltinFn),
     Closure(RefValue, RefValue, Env),
-    Subr(&'static str, SubrFn),
+    Subr(&'static str, BuiltinFn),
     Cont(Box<VM>),
 }
 impl Value {
@@ -140,5 +140,4 @@ impl ::std::fmt::Debug for RefValue {
     }
 }
 
-pub type SyntaxFn = fn(&mut VM) -> Result<(), String>;
-pub type SubrFn = fn(&mut dyn Iterator<Item = Value>) -> Result<Value, String>;
+pub type BuiltinFn = fn(&mut VM) -> Result<(), String>;

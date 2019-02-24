@@ -12,18 +12,16 @@ fn define_syntax(vm: &mut VM) -> Result<(), String> {
                 if let Some(StackData::Val(value)) = vm.stack.pop() {
                     if let Some(StackData::Val(Value::Ident(ident))) = vm.stack.pop() {
                         vm.env.insert(ident, value);
-                        vm.rr = Value::Bool(true);
-                        vm.stack.truncate(vm.sp as usize);
-                        vm.sp -= 1;
+                        vm.ret(Value::Bool(true))
                     } else {
                         return Err("syntax error".to_string());
                     }
                 } else {
                     return Err("internal error".to_string());
                 }
-                Ok(())
             })));
             vm.stack.push(StackData::Val(Value::Ident(ident)));
+            Ok(())
         }
         Value::Cons(defun_ident, defun_args) => {
             let body = vm.pp.next().ok_or("syntax error")?;
@@ -34,29 +32,21 @@ fn define_syntax(vm: &mut VM) -> Result<(), String> {
                 .or(Err("syntax error"))?;
             let value = Value::Closure(defun_args, RefValue::new(body), vm.env.clone());
             vm.env.insert(defun_ident, value);
-            vm.rr = Value::Bool(true);
-            vm.stack.truncate(vm.sp as usize);
-            vm.sp -= 1;
+            vm.ret(Value::Bool(true))
         }
         _ => panic!("syntax error"),
     }
-    Ok(())
 }
 
 fn quote_syntax(vm: &mut VM) -> Result<(), String> {
-    vm.rr = vm.pp.next().ok_or("syntax error")?;
-    vm.stack.truncate(vm.sp as usize);
-    vm.sp -= 1;
-    Ok(())
+    let quoted = vm.pp.next().ok_or("syntax error")?;
+    vm.ret(quoted)
 }
 
 fn lambda_syntax(vm: &mut VM) -> Result<(), String> {
     let args = vm.pp.next().ok_or("syntax error")?;
     let body = vm.pp.next().ok_or("syntax error")?;
-    vm.rr = Value::Closure(RefValue::new(args), RefValue::new(body), vm.env.clone());
-    vm.stack.truncate(vm.sp as usize);
-    vm.sp -= 1;
-    Ok(())
+    vm.ret(Value::Closure(RefValue::new(args), RefValue::new(body), vm.env.clone()))
 }
 
 fn if_syntax(vm: &mut VM) -> Result<(), String> {
@@ -102,6 +92,96 @@ fn print_env_syntax(vm: &mut VM) -> Result<(), String> {
     Ok(())
 }
 
+fn cons_subr(vm: &mut VM) -> Result<(), String> {
+    let mut args = vm.args();
+    let car = args.next().ok_or("syntax error")??;
+    let cdr = args.next().ok_or("syntax error")??;
+    std::mem::drop(args);
+    vm.ret(Value::Cons(RefValue::new(car), RefValue::new(cdr)))
+}
+
+fn car_subr(vm: &mut VM) -> Result<(), String> {
+    let mut args = vm.args();
+    let cons = args.next().ok_or("syntax error")??.try_into_cons()?;
+    std::mem::drop(args);
+    vm.ret(cons.0)
+}
+
+fn cdr_subr(vm: &mut VM) -> Result<(), String> {
+    let mut args = vm.args();
+    let cons = args.next().ok_or("syntax error")??.try_into_cons()?;
+    std::mem::drop(args);
+    vm.ret(cons.1)
+}
+
+fn eqv_subr(vm: &mut VM) -> Result<(), String> {
+    let mut args = vm.args();
+    let first = args.next().ok_or("syntax error")??;
+    let mut result = true;
+    for val in args {
+        if first != val? {
+            result = false;
+            break;
+        }
+    }
+    vm.ret(Value::Bool(result))
+}
+
+fn equal_subr(vm: &mut VM) -> Result<(), String> {
+    let mut args = vm.args();
+    let first = args.next().ok_or("syntax error")??;
+    let mut result = true;
+    for val in args {
+        if first != val? {
+            result = false;
+            break;
+        }
+    }
+    vm.ret(Value::Bool(result))
+}
+
+fn plus_subr(vm: &mut VM) -> Result<(), String> {
+    let mut acc = 0.0;
+    for val in vm.args() {
+        acc += val?.try_into_num()?;
+    }
+    vm.ret(Value::Num(acc))
+}
+
+fn minus_subr(vm: &mut VM) -> Result<(), String> {
+    let mut args = vm.args();
+    let mut acc = args.next().ok_or("syntax error")??.try_into_num()?;
+    for val in args {
+        acc -= val?.try_into_num()?;
+    }
+    vm.ret(Value::Num(acc))
+}
+
+fn multiply_subr(vm: &mut VM) -> Result<(), String> {
+    let mut acc = 1.0;
+    for val in vm.args() {
+        acc *= val?.try_into_num()?;
+    }
+    vm.ret(Value::Num(acc))
+}
+
+fn divide_subr(vm: &mut VM) -> Result<(), String> {
+    let mut args = vm.args();
+    let mut acc = args.next().ok_or("syntax error")??.try_into_num()?;
+    for val in args {
+        acc /= val?.try_into_num()?;
+    }
+    vm.ret(Value::Num(acc))
+}
+
+fn print_subr(vm: &mut VM) -> Result<(), String> {
+    for val in vm.args() {
+        println!("{:?}", val?);
+    }
+    vm.ret(Value::Bool(true))
+}
+
+
 pub static SYNTAX: &[(&str, fn(&mut VM) -> Result<(), String>)] = &[
     ("define", define_syntax),
     ("quote", quote_syntax),
@@ -111,85 +191,7 @@ pub static SYNTAX: &[(&str, fn(&mut VM) -> Result<(), String>)] = &[
     ("print-env", print_env_syntax),
 ];
 
-fn cons_subr(args: &mut dyn Iterator<Item = Value>) -> Result<Value, String> {
-    let car = args.next().ok_or("syntax error")?;
-    let cdr = args.next().ok_or("syntax error")?;
-    Ok(Value::Cons(RefValue::new(car), RefValue::new(cdr)))
-}
-
-fn car_subr(args: &mut dyn Iterator<Item = Value>) -> Result<Value, String> {
-    let cons = args.next().ok_or("syntax error")?.try_into_cons()?;
-    Ok(cons.0)
-}
-
-fn cdr_subr(args: &mut dyn Iterator<Item = Value>) -> Result<Value, String> {
-    let cons = args.next().ok_or("syntax error")?.try_into_cons()?;
-    Ok(cons.1)
-}
-
-fn eqv_subr(args: &mut dyn Iterator<Item = Value>) -> Result<Value, String> {
-    let first = args.next().ok_or("syntax error")?;
-    for v in args {
-        if v != first {
-            return Ok(Value::Bool(false));
-        }
-    }
-    Ok(Value::Bool(true))
-}
-
-fn equal_subr(args: &mut dyn Iterator<Item = Value>) -> Result<Value, String> {
-    let first = args.next().ok_or("syntax error")?;
-    for val in args {
-        if first != val {
-            return Ok(Value::Bool(false));
-        }
-    }
-    Ok(Value::Bool(true))
-}
-
-fn plus_subr(args: &mut dyn Iterator<Item = Value>) -> Result<Value, String> {
-    let mut acc = 0.0;
-    for val in args {
-        acc += val.try_into_num()?;
-    }
-    Ok(Value::Num(acc))
-}
-
-fn minus_subr(args: &mut dyn Iterator<Item = Value>) -> Result<Value, String> {
-    let mut acc = args.next().ok_or("syntax error")?.try_into_num()?;
-    for val in args {
-        acc -= val.try_into_num()?;
-    }
-    Ok(Value::Num(acc))
-}
-
-fn multiply_subr(args: &mut dyn Iterator<Item = Value>) -> Result<Value, String> {
-    let mut acc = 1.0;
-    for val in args {
-        acc *= val.try_into_num()?;
-    }
-    Ok(Value::Num(acc))
-}
-
-fn divide_subr(args: &mut dyn Iterator<Item = Value>) -> Result<Value, String> {
-    let mut acc = args.next().ok_or("syntax error")?.try_into_num()?;
-    for val in args {
-        acc /= val.try_into_num()?;
-    }
-    Ok(Value::Num(acc))
-}
-
-fn print_subr(args: &mut dyn Iterator<Item = Value>) -> Result<Value, String> {
-    for val in args {
-        println!("{:?}", val);
-    }
-    Ok(Value::Bool(true))
-}
-
-pub static SUBR: &[(
-    &str,
-    fn(&mut dyn Iterator<Item = Value>) -> Result<Value, String>,
-)] = &[
+pub static SUBR: &[(&str, fn(&mut VM) -> Result<(), String>)] = &[
     ("cons", cons_subr),
     ("car", car_subr),
     ("cdr", cdr_subr),

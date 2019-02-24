@@ -17,6 +17,25 @@ pub struct VM {
     pub env: Env,
 }
 
+impl VM {
+    pub fn args(&self) -> impl Iterator<Item=Result<Value, String>> + '_ {
+        self.stack[self.sp as usize + 1..].iter().map(|d| {
+            if let StackData::Val(v) = d {
+                Ok(v.clone())
+            } else {
+                Err("internal error".to_string())
+            }
+        })
+    }
+
+    pub fn ret(&mut self, val: Value) -> Result<(), String> {
+        self.rr = val;
+        self.stack.truncate(self.sp as usize);
+        self.sp -= 1;
+        Ok(())
+    }
+}
+
 pub fn eval(val: Value, env: Env, debug_mode: bool) -> Result<Value, String> {
     let mut vm = VM {
         pp: val,
@@ -55,7 +74,9 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Result<Value, String> {
                     StackData::Val(Value::Closure(closure_args, closure_body, closure_env)) => {
                         let extended_env = closure_env.extend();
                         for (i, closure_arg) in closure_args.to_value().enumerate() {
-                            let ident = closure_arg.try_into_ident().or(Err("syntax error".to_string()))?;
+                            let ident = closure_arg
+                                .try_into_ident()
+                                .or(Err("syntax error".to_string()))?;
                             if let StackData::Val(value) = vm.stack[vm.sp as usize + 1 + i].clone()
                             {
                                 extended_env.insert(ident, value);
@@ -79,17 +100,7 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Result<Value, String> {
                         f(&mut vm)?;
                     }
                     StackData::Val(Value::Subr(_name, f)) => {
-                        let mut args = Vec::new();
-                        for d in &vm.stack[vm.sp as usize + 1..] {
-                            if let StackData::Val(v) = d {
-                                args.push(v.clone());
-                            } else {
-                                return Err("internal error".to_string());
-                            }
-                        }
-                        vm.rr = f(&mut args.into_iter())?;
-                        vm.stack.truncate(vm.sp as usize);
-                        vm.sp -= 1;
+                        f(&mut vm)?;
                     }
                     StackData::Val(Value::Cont(box_vm)) => {
                         if let Some(StackData::Val(arg)) = vm.stack.pop() {
