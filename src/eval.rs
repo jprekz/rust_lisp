@@ -114,9 +114,6 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Result<Value, String> {
                 vm.env = extended_env;
                 vm.sp += 1;
             }
-            StackData::Val(Value::Syntax(_name, f)) => {
-                f(&mut vm)?;
-            }
             StackData::Val(Value::Subr(_name, f)) => {
                 f(&mut vm)?;
             }
