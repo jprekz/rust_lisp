@@ -46,7 +46,11 @@ fn quote_syntax(vm: &mut VM) -> Result<(), String> {
 fn lambda_syntax(vm: &mut VM) -> Result<(), String> {
     let args = vm.pp.next().ok_or("syntax error")?;
     let body = vm.pp.next().ok_or("syntax error")?;
-    vm.ret(Value::Closure(RefValue::new(args), RefValue::new(body), vm.env.clone()))
+    vm.ret(Value::Closure(
+        RefValue::new(args),
+        RefValue::new(body),
+        vm.env.clone(),
+    ))
 }
 
 fn if_syntax(vm: &mut VM) -> Result<(), String> {
@@ -81,14 +85,6 @@ fn call_cc_syntax(vm: &mut VM) -> Result<(), String> {
             vm.stack.push(StackData::Val(cont));
             Ok(())
         })));
-    Ok(())
-}
-
-fn print_env_syntax(vm: &mut VM) -> Result<(), String> {
-    vm.env.print();
-    vm.stack.pop();
-    vm.rr = Value::Null;
-    vm.sp -= 1;
     Ok(())
 }
 
@@ -181,6 +177,10 @@ fn print_subr(vm: &mut VM) -> Result<(), String> {
     vm.ret(Value::Bool(true))
 }
 
+fn print_env_subr(vm: &mut VM) -> Result<(), String> {
+    vm.env.print();
+    vm.ret(Value::Bool(true))
+}
 
 pub static SYNTAX: &[(&str, fn(&mut VM) -> Result<(), String>)] = &[
     ("define", define_syntax),
@@ -188,7 +188,6 @@ pub static SYNTAX: &[(&str, fn(&mut VM) -> Result<(), String>)] = &[
     ("lambda", lambda_syntax),
     ("if", if_syntax),
     ("call/cc", call_cc_syntax),
-    ("print-env", print_env_syntax),
 ];
 
 pub static SUBR: &[(&str, fn(&mut VM) -> Result<(), String>)] = &[
@@ -202,4 +201,5 @@ pub static SUBR: &[(&str, fn(&mut VM) -> Result<(), String>)] = &[
     ("*", multiply_subr),
     ("/", divide_subr),
     ("print", print_subr),
+    ("print-env", print_env_subr),
 ];
