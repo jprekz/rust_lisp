@@ -1,20 +1,22 @@
 use crate::env::Env;
+use crate::value::BuiltinFn;
+use crate::value::RefValue;
 use crate::value::Value;
 
 #[derive(Clone, Debug)]
 pub enum StackData {
-    Frame(i64, Value),
+    Frame { next_sp: i64, next_pp: Value },
     Val(Value),
     Env(Env),
 }
 
 #[derive(Clone)]
 pub struct VM {
-    pub pp: Value,
-    pub sp: i64,
-    pub rr: Value,
-    pub stack: Vec<StackData>,
-    pub env: Env,
+    pp: Value,
+    sp: i64,
+    rr: Value,
+    stack: Vec<StackData>,
+    env: Env,
 }
 
 impl VM {
@@ -33,6 +35,56 @@ impl VM {
         self.stack.truncate(self.sp as usize); // clear args and fn
         self.sp -= 1;
         Ok(())
+    }
+
+    pub fn pop_pp(&mut self) -> Option<Value> {
+        match self.pp.clone() {
+            Value::Null => None,
+            Value::Cons(car, cdr) => {
+                self.pp = cdr.to_value();
+                Some(car.to_value())
+            }
+            other => {
+                self.pp = Value::Null;
+                Some(other)
+            }
+        }
+    }
+
+    pub fn set_pp(&mut self, value: Value) {
+        self.pp = value;
+    }
+
+    pub fn pop_value(&mut self) -> Result<Value, String> {
+        if let Some(StackData::Val(value)) = self.stack.pop() {
+            return Ok(value);
+        } else {
+            return Err("syntax error".to_string());
+        }
+    }
+
+    pub fn push_value(&mut self, value: Value) {
+        self.stack.push(StackData::Val(value));
+    }
+
+    pub fn eval_then(&mut self, name: &'static str, f: BuiltinFn) {
+        self.stack.push(StackData::Val(Value::Syntax(name, f)));
+    }
+
+    pub fn new_closure(&self, args: RefValue, body: RefValue) -> Value {
+        Value::Closure(args, body, self.env.clone())
+    }
+
+    pub fn define(&self, ident: String, value: Value) {
+        self.env.insert(ident, value);
+    }
+
+    pub fn truncate_stack(&mut self) {
+        self.stack.truncate(self.sp as usize);
+    }
+
+    pub fn print_env(&self) {
+        self.env.print();
     }
 }
 
@@ -62,7 +114,10 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Result<Value, String> {
 
         match vm.pp.clone() {
             Value::Cons(car, cdr) => {
-                vm.stack.push(StackData::Frame(vm.sp, cdr.to_value()));
+                vm.stack.push(StackData::Frame {
+                    next_sp: vm.sp,
+                    next_pp: cdr.to_value(),
+                });
                 vm.sp = vm.stack.len() as i64;
                 vm.pp = car.to_value();
                 continue;
@@ -92,7 +147,7 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Result<Value, String> {
         match vm.stack[vm.sp as usize].clone() {
             StackData::Val(Value::Closure(closure_args, closure_body, closure_env)) => {
                 let extended_env = closure_env.extend();
-                for (i, closure_arg) in closure_args.to_value().enumerate() {
+                for (i, closure_arg) in closure_args.to_value().into_list_iter().enumerate() {
                     let ident = closure_arg
                         .try_into_ident()
                         .or(Err("syntax error".to_string()))?;
@@ -130,9 +185,9 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Result<Value, String> {
             StackData::Val(_) => {
                 return Err("invalid application".to_string());
             }
-            StackData::Frame(sp, pp) => {
-                vm.pp = pp;
-                vm.sp = sp;
+            StackData::Frame { next_sp, next_pp } => {
+                vm.pp = next_pp;
+                vm.sp = next_sp;
                 vm.stack.pop();
                 vm.stack.push(StackData::Val(vm.rr.clone()));
                 if let StackData::Val(Value::Syntax(_name, f)) = vm.stack[vm.sp as usize].clone() {

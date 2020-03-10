@@ -1,37 +1,35 @@
-use crate::eval::{StackData, VM};
+use crate::eval::VM;
 use crate::value::{RefValue, Value};
 
 fn define_syntax(vm: &mut VM) -> Result<(), String> {
-    match vm.pp.next().ok_or("syntax error")? {
+    match vm.pop_pp().ok_or("syntax error")? {
+        // (define ident value)
         Value::Ident(ident) => {
-            vm.stack.truncate(vm.sp as usize);
-            vm.stack.push(StackData::Val(Value::Syntax("define2", |vm| {
-                if vm.pp != Value::Null {
+            vm.truncate_stack();
+            vm.eval_then("define2", |vm| {
+                if vm.pop_pp() != None {
                     return Err("syntax error".to_string());
                 }
-                if let Some(StackData::Val(value)) = vm.stack.pop() {
-                    if let Some(StackData::Val(Value::Ident(ident))) = vm.stack.pop() {
-                        vm.env.insert(ident, value);
-                        vm.ret(Value::Bool(true))
-                    } else {
-                        return Err("syntax error".to_string());
-                    }
-                } else {
-                    return Err("internal error".to_string());
-                }
-            })));
-            vm.stack.push(StackData::Val(Value::Ident(ident)));
+                let value = vm.pop_value()?;
+                let ident = vm.pop_value()?.try_into_ident()?;
+                vm.define(ident, value);
+                vm.ret(Value::Bool(true))
+            });
+            vm.push_value(Value::Ident(ident));
             Ok(())
         }
+        // (define (defun_ident defun_args...) body)
         Value::Cons(defun_ident, defun_args) => {
-            let body = vm.pp.next().ok_or("syntax error")?;
-            let _ = vm.pp.clone().try_into_nil().or(Err("syntax error"))?;
+            let body = vm.pop_pp().ok_or("syntax error")?;
+            if vm.pop_pp() != None {
+                return Err("syntax error".to_string());
+            }
             let defun_ident = defun_ident
                 .to_value()
                 .try_into_ident()
                 .or(Err("syntax error"))?;
-            let value = Value::Closure(defun_args, RefValue::new(body), vm.env.clone());
-            vm.env.insert(defun_ident, value);
+            let value = vm.new_closure(defun_args, RefValue::new(body));
+            vm.define(defun_ident, value);
             vm.ret(Value::Bool(true))
         }
         _ => panic!("syntax error"),
@@ -39,52 +37,47 @@ fn define_syntax(vm: &mut VM) -> Result<(), String> {
 }
 
 fn quote_syntax(vm: &mut VM) -> Result<(), String> {
-    let quoted = vm.pp.next().ok_or("syntax error")?;
+    let quoted = vm.pop_pp().ok_or("syntax error")?;
     vm.ret(quoted)
 }
 
 fn lambda_syntax(vm: &mut VM) -> Result<(), String> {
-    let args = vm.pp.next().ok_or("syntax error")?;
-    let body = vm.pp.next().ok_or("syntax error")?;
-    vm.ret(Value::Closure(
-        RefValue::new(args),
-        RefValue::new(body),
-        vm.env.clone(),
-    ))
+    let args = vm.pop_pp().ok_or("syntax error")?;
+    let body = vm.pop_pp().ok_or("syntax error")?;
+    vm.ret(vm.new_closure(RefValue::new(args), RefValue::new(body)))
 }
 
 fn if_syntax(vm: &mut VM) -> Result<(), String> {
-    vm.stack.truncate(vm.sp as usize);
-    vm.stack.push(StackData::Val(Value::Syntax("if2", |vm| {
-        if let Some(StackData::Val(Value::Bool(b))) = vm.stack.pop() {
-            if !b {
-                vm.pp.next();
-            }
+    vm.truncate_stack();
+    vm.eval_then("if2", |vm| {
+        let test = vm.pop_value()?.try_into_bool()?;
+        let then_expr = vm.pop_pp().ok_or("syntax error")?;
+        let else_expr = vm.pop_pp().unwrap_or(Value::Null);
+        if test {
+            vm.set_pp(then_expr);
         } else {
-            return Err("syntax error".to_string());
+            vm.set_pp(else_expr);
         }
-        vm.pp = vm.pp.next().unwrap_or(Value::Null);
-        vm.stack.truncate(vm.sp as usize);
+        vm.truncate_stack();
         Ok(())
-    })));
+    });
     Ok(())
 }
 
 fn call_cc_syntax(vm: &mut VM) -> Result<(), String> {
-    vm.stack.truncate(vm.sp as usize);
-    vm.stack
-        .push(StackData::Val(Value::Syntax("call/cc2", |vm| {
-            let cont = Value::Cont(Box::new(vm.clone()));
-            let lambda = vm.stack.pop().ok_or("internal error")?;
-            if let StackData::Val(Value::Closure(_, _, _)) = lambda {
-            } else {
-                return Err("syntax error".to_string());
-            }
-            vm.stack.pop();
-            vm.stack.push(lambda);
-            vm.stack.push(StackData::Val(cont));
-            Ok(())
-        })));
+    vm.truncate_stack();
+    vm.eval_then("call/cc2", |vm| {
+        let cont = Value::Cont(Box::new(vm.clone()));
+        let lambda = vm.pop_value()?;
+        if let Value::Closure(_, _, _) = lambda {
+        } else {
+            return Err("syntax error".to_string());
+        }
+        vm.pop_value()?; // pop 'call/cc ?
+        vm.push_value(lambda);
+        vm.push_value(cont);
+        Ok(())
+    });
     Ok(())
 }
 
@@ -178,7 +171,7 @@ fn print_subr(vm: &mut VM) -> Result<(), String> {
 }
 
 fn print_env_subr(vm: &mut VM) -> Result<(), String> {
-    vm.env.print();
+    vm.print_env();
     vm.ret(Value::Bool(true))
 }
 

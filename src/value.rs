@@ -4,6 +4,8 @@ use crate::eval::VM;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+pub type BuiltinFn = fn(&mut VM) -> Result<(), String>;
+
 #[derive(Clone)]
 pub enum Value {
     Null,
@@ -47,6 +49,24 @@ impl Value {
             _ => Err("type mismatch".to_string()),
         }
     }
+
+    pub fn into_list_iter(self) -> impl Iterator<Item = Value> {
+        ListIterator(self)
+    }
+}
+
+pub struct ListIterator(Value);
+impl Iterator for ListIterator {
+    type Item = Value;
+
+    fn next(&mut self) -> Option<Value> {
+        let (car, cdr) = match &self.0 {
+            Value::Cons(car, cdr) => (car.to_value(), cdr.to_value()),
+            _ => return None,
+        };
+        self.0 = cdr;
+        Some(car)
+    }
 }
 
 impl ::std::fmt::Debug for Value {
@@ -74,24 +94,6 @@ impl ::std::fmt::Debug for Value {
             Value::Closure(a, b, _) => write!(f, "#<closure {:?} {:?}>", a, b),
             Value::Subr(name, _) => write!(f, "#<subr {}>", name),
             Value::Cont(_vm) => write!(f, "#<subr continuation>"),
-        }
-    }
-}
-
-impl Iterator for Value {
-    type Item = Value;
-
-    fn next(&mut self) -> Option<Value> {
-        match self.clone() {
-            Value::Null => None,
-            Value::Cons(car, cdr) => {
-                *self = cdr.to_value();
-                Some(car.to_value())
-            }
-            other => {
-                *self = Value::Null;
-                Some(other)
-            }
         }
     }
 }
@@ -139,5 +141,3 @@ impl ::std::fmt::Debug for RefValue {
         write!(f, "{:?}", self.0.borrow())
     }
 }
-
-pub type BuiltinFn = fn(&mut VM) -> Result<(), String>;
