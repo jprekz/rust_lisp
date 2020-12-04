@@ -31,6 +31,22 @@ struct Opt {
 fn main() {
     let opt = Opt::from_args();
 
+    let mut builder = env_logger::builder();
+    if opt.debug {
+        builder.filter_level(log::LevelFilter::Debug);
+        builder.format_timestamp(None);
+    } else {
+        builder.format(|buf, record| {
+            writeln!(
+                buf,
+                "{}: {}",
+                buf.default_styled_level(record.level()),
+                record.args()
+            )
+        });
+    }
+    builder.init();
+
     let input: Box<dyn Iterator<Item = char>> = {
         if let Some(path) = &opt.file {
             let file = File::open(path).unwrap();
@@ -55,11 +71,11 @@ fn main() {
         let parsed = match parse(&mut lexer) {
             Ok(v) => v,
             Err(e) => {
-                println!("\nError: {}", e);
+                log::error!("{}", e);
                 break;
             }
         };
-        match eval(parsed, env.clone(), opt.debug) {
+        match eval(parsed, env.clone()) {
             Ok(value) => {
                 if opt.file.is_none() {
                     println!("{:?}", value);
@@ -67,7 +83,7 @@ fn main() {
                 }
             }
             Err(e) => {
-                println!("ERROR: {:?}", e);
+                log::error!("{:?}", e);
             }
         }
     }

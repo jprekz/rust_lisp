@@ -1,3 +1,5 @@
+use std::mem::size_of;
+
 use crate::env::Env;
 use crate::value::BuiltinFn;
 use crate::value::RefValue;
@@ -88,7 +90,7 @@ impl VM {
     }
 }
 
-pub fn eval(val: Value, env: Env, debug_mode: bool) -> Result<Value, String> {
+pub fn eval(val: Value, env: Env) -> Result<Value, String> {
     let mut vm = VM {
         pp: val,
         sp: 0i64,
@@ -97,20 +99,19 @@ pub fn eval(val: Value, env: Env, debug_mode: bool) -> Result<Value, String> {
         env: env,
     };
 
-    if debug_mode {
-        use std::mem::size_of;
-        eprintln!("[DEBUG] size of StackData: {:?}", size_of::<StackData>());
-        eprintln!("[DEBUG] size of Value: {:?}", size_of::<Value>());
-        eprintln!("[DEBUG] size of Env: {:?}", size_of::<Env>());
-    }
+    log::debug!("size of StackData: {:?}", size_of::<StackData>());
+    log::debug!("size of Value: {:?}", size_of::<Value>());
+    log::debug!("size of Env: {:?}", size_of::<Env>());
 
     loop {
-        if debug_mode {
-            eprintln!(
-                "[DEBUG] env:{:?}\tsp:{}\tpp:{:?}\trr:{:?}\n stack: {:?}",
-                vm.env, vm.sp, vm.pp, vm.rr, vm.stack
-            );
-        }
+        log::debug!(
+            "env:{:?}\tsp:{}\tpp:{:?}\trr:{:?}",
+            vm.env,
+            vm.sp,
+            vm.pp,
+            vm.rr
+        );
+        log::debug!("stack: {:?}", vm.stack);
 
         match vm.pp.clone() {
             Value::Cons(car, cdr) => {
