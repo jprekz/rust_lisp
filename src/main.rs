@@ -16,8 +16,7 @@ use std::path::PathBuf;
 
 use structopt::*;
 
-#[derive(StructOpt, Debug)]
-#[structopt(name = "rust_lisp")]
+#[derive(StructOpt)]
 struct Opt {
     /// Activate debug mode
     #[structopt(short = "d", long = "debug")]
